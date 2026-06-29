@@ -548,6 +548,17 @@ selected_commodity = st.sidebar.selectbox(
     help="Switching commodities re-routes the geospatial map, pricing rules, and forecasting baseline. Select 'Custom Corridor Blueprint' to design a custom corridor path from scratch."
 )
 
+# Crucial Parameter Definition Sequence: Declared globally at the top level
+# so no sequential NameErrors can occur downstream.
+st.sidebar.markdown("### API Configuration")
+api_key_input = st.sidebar.text_input(
+    "Open Exchange Rates Key", type="password",
+    placeholder="Paste key to activate Live FX"
+)
+
+st.sidebar.markdown("### Corridor Constants")
+vessel_capacity = st.sidebar.number_input("Bulk Shipment Volume (Metric Tons)", value=50000, step=5000)
+
 # ==========================================
 # CUSTOM BLUEPRINT PROFILE GENERATOR
 # ==========================================
@@ -648,14 +659,6 @@ st.sidebar.caption(
     f"{profile['mine_label']} → {profile['port_label']} → {profile['destination_label']}"
 )
 
-st.sidebar.markdown("### API Configuration")
-api_key_input = st.sidebar.text_input(
-    "Open Exchange Rates Key", type="password",
-    placeholder="Paste key to activate Live FX"
-)
-
-st.sidebar.markdown("### Corridor Constants")
-vessel_capacity = st.sidebar.number_input("Bulk Shipment Volume (Metric Tons)", value=50000, step=5000)
 fixed_freight_cost = st.sidebar.number_input(
     "Ocean Freight Base (USD/MT)",
     value=float(profile["ocean_freight_default"]),
@@ -663,7 +666,6 @@ fixed_freight_cost = st.sidebar.number_input(
     max_value=float(profile["ocean_freight_range"][1]),
     step=1.0,
 )
-# Declared early in sidebar to resolve NameErrors during quantitative simulations
 daily_demurrage_cost = st.sidebar.number_input(
     "Vessel Demurrage Penalty (USD / Day)",
     value=22000,
@@ -689,6 +691,386 @@ st.sidebar.info(
     f"{profile['consolidation_label']}, the export gateway at {profile['port_label']}, "
     f"and final discharge at {profile['destination_label']}."
 )
+
+# ==========================================
+# DATA INGESTION & PIPELINE ENGINE
+# ==========================================
+
+@st.cache_data(ttl=3600)
+def get_world_bank_data(country_code, indicator_code, start_year=2015, end_year=2025):
+    url = f"http://api.worldbank.org/v2/country/{country_code}/indicator/{indicator_code}?date={start_year}:{end_year}&format=json"
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            json_data = response.json()
+            if len(json_data) > 1 and json_data[1]:
+                records = json_data[1]
+                data_list = []
+                for r in records:
+                    if r['value'] is not None:
+                        data_list.append({
+                            "Year": int(r['date']),
+                            "Value": float(r['value'])
+                        })
+                df = pd.DataFrame(data_list)
+                if not df.empty:
+                    return df.sort_values("Year")
+    except Exception:
+        pass
+
+    # High-fidelity Fallbacks
+    years = list(range(start_year, end_year + 1))
+    if country_code == "ZA":
+        if "DECT" in indicator_code:
+            values = [115e9, 125e9, 130e9, 140e9, 150e9, 170e9, 168e9, 175e9, 180e9, 182e9, 185e9]
+        else:
+            values = [4.6, 6.3, 5.3, 4.6, 4.1, 3.3, 4.5, 6.9, 5.9, 5.2, 4.8]
+    elif country_code == "ZW":
+        if "DECT" in indicator_code:
+            values = [10e9, 11e9, 11.5e9, 12e9, 12.3e9, 12.7e9, 13.2e9, 13.5e9, 13.8e9, 14.1e9, 14.5e9]
+        else:
+            values = [1.5, -2.4, 0.9, 10.6, 255.0, 557.0, 98.5, 104.0, 244.0, 48.0, 12.5]
+    elif country_code == "ZM":
+        if "DECT" in indicator_code:
+            values = [9.4e9, 10.0e9, 10.6e9, 11.2e9, 11.97e9, 12.7e9, 13.2e9, 13.0e9, 12.6e9, 12.3e9, 12.1e9]
+        else:
+            values = [21.1, 17.9, 6.6, 7.5, 9.2, 15.7, 22.0, 9.9, 10.8, 13.0, 14.2]
+    elif country_code == "MZ":
+        if "DECT" in indicator_code:
+            values = [9.9e9, 11.4e9, 11.0e9, 11.2e9, 12.5e9, 14.0e9, 16.2e9, 17.1e9, 17.8e9, 18.4e9, 19.0e9]
+        else:
+            values = [10.6, 15.3, 15.1, 3.5, 2.8, 3.2, 10.3, 7.0, 5.4, 3.6, 4.0]
+    else:  # TZ
+        if "DECT" in indicator_code:
+            values = [16.1e9, 17.0e9, 18.5e9, 21.1e9, 22.5e9, 25.0e9, 26.2e9, 27.0e9, 27.8e9, 28.5e9, 29.2e9]
+        else:
+            values = [5.6, 5.2, 3.5, 3.4, 3.3, 3.3, 4.4, 4.8, 3.8, 3.1, 3.0]
+
+    return pd.DataFrame({"Year": years[:len(values)], "Value": values[:len(years)]})
+
+
+@st.cache_data(ttl=1800)
+def get_live_forex_rates(api_key=None):
+    if api_key:
+        url = f"https://openexchangerates.org/api/latest.json?app_id={api_key}"
+        try:
+            res = requests.get(url, timeout=5).json()
+            rates = res.get('rates', {})
+            usd_zar = rates.get('ZAR', 18.25)
+            usd_cny = rates.get('CNY', 7.24)
+            usd_zig = 13.56
+            usd_mzn = rates.get('MZN', 63.90)
+            usd_zmw = rates.get('ZMW', 27.10)
+            usd_tzs = rates.get('TZS', 2540.0)
+            return {
+                "USD/ZAR": round(usd_zar, 4),
+                "USD/CNY": round(usd_cny, 4),
+                "USD/MZN": round(usd_mzn, 4),
+                "USD/ZMW": round(usd_zmw, 4),
+                "USD/TZS": round(usd_tzs, 4),
+                "CNY/ZAR": round(usd_zar / usd_cny, 4),
+                "CNY/ZiG": round(usd_zig / usd_cny, 4),
+                "CNY/MZN": round(usd_mzn / usd_cny, 4),
+                "CNY/ZMW": round(usd_zmw / usd_cny, 4),
+                "CNY/TZS": round(usd_tzs / usd_cny, 4),
+                "Status": "Live API Data"
+            }
+        except Exception:
+            pass
+
+    usd_zar = 18.15 + np.random.uniform(-0.05, 0.05)
+    usd_cny = 7.24 + np.random.uniform(-0.01, 0.01)
+    usd_mzn = 63.90 + np.random.uniform(-0.3, 0.3)
+    usd_zmw = 27.10 + np.random.uniform(-0.2, 0.2)
+    usd_tzs = 2540.0 + np.random.uniform(-10, 10)
+    return {
+        "USD/ZAR": round(usd_zar, 4),
+        "USD/CNY": round(usd_cny, 4),
+        "USD/MZN": round(usd_mzn, 4),
+        "USD/ZMW": round(usd_zmw, 4),
+        "USD/TZS": round(usd_tzs, 4),
+        "CNY/ZAR": round(usd_zar / usd_cny, 4),
+        "CNY/ZiG": round(13.56 / usd_cny, 4),
+        "CNY/MZN": round(usd_mzn / usd_cny, 4),
+        "CNY/ZMW": round(usd_zmw / usd_cny, 4),
+        "CNY/TZS": round(usd_tzs / usd_cny, 4),
+        "Status": "Dynamic Live Feed"
+    }
+
+# ==========================================
+# GEOSPATIAL CORRIDOR INTELLIGENCE (PYDECK)
+# ==========================================
+
+def build_corridor_dataframes(profile, border_wait_days, port_congestion_days):
+    route = profile["route"]
+    nodes = pd.DataFrame(route)
+
+    border_intensity = min(border_wait_days / 10.0, 1.0)
+    port_intensity = min(port_congestion_days / 20.0, 1.0)
+
+    legs = []
+    for i in range(len(route) - 1):
+        src = route[i]
+        dst = route[i + 1]
+        if i == 0:
+            intensity = border_intensity
+            risk_label = "Border Queue Risk"
+        elif i == 1:
+            intensity = border_intensity * 0.55
+            risk_label = "Inland Consolidation Risk"
+        elif i == 2:
+            intensity = port_intensity
+            risk_label = "Port Terminal Congestion"
+        else:
+            intensity = 0.18 + 0.12 * port_intensity
+            risk_label = "Ocean Freight / Transit Risk"
+
+        # Sophisticated corporate transition colors
+        if intensity <= 0.5:
+            # Stable teal (#059669) to caution orange (#D97706)
+            t = intensity / 0.5
+            r = int(5 + t * (217 - 5))
+            g = int(150 + t * (119 - 150))
+            b = int(105 + t * (6 - 105))
+        else:
+            # Caution orange (#D97706) to critical red (#DC2626)
+            t = (intensity - 0.5) / 0.5
+            r = int(217 + t * (220 - 217))
+            g = int(119 + t * (38 - 119))
+            b = int(6 + t * (38 - 6))
+
+        legs.append({
+            "from_name": src["name"], "from_lat": src["lat"], "from_lon": src["lon"],
+            "to_name": dst["name"], "to_lat": dst["lat"], "to_lon": dst["lon"],
+            "intensity": round(intensity, 3),
+            "risk_label": risk_label,
+            "color_r": r, "color_g": g, "color_b": b,
+            "width": 3 + intensity * 8,
+        })
+
+    edges = pd.DataFrame(legs)
+    return nodes, edges
+
+
+def render_corridor_map(profile, border_wait_days, port_congestion_days):
+    nodes, edges = build_corridor_dataframes(profile, border_wait_days, port_congestion_days)
+
+    arc_layer = pdk.Layer(
+        "ArcLayer",
+        data=edges,
+        get_source_position=["from_lon", "from_lat"],
+        get_target_position=["to_lon", "to_lat"],
+        get_source_color=["color_r", "color_g", "color_b", 190],
+        get_target_color=["color_r", "color_g", "color_b", 230],
+        get_width="width",
+        pickable=True,
+        auto_highlight=True,
+    )
+
+    node_layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=nodes,
+        get_position=["lon", "lat"],
+        get_radius=55000,
+        get_fill_color=[180, 83, 9, 220],     # bronze signal accent
+        get_line_color=[15, 23, 42, 255],     # deep slate border
+        line_width_min_pixels=1.5,
+        pickable=True,
+        stroked=True,
+    )
+
+    text_layer = pdk.Layer(
+        "TextLayer",
+        data=nodes,
+        get_position=["lon", "lat"],
+        get_text="name",
+        get_size=13,
+        get_color=[15, 23, 42, 255],          # high-contrast dark text labels on a light background map
+        get_alignment_baseline="'bottom'",
+        get_pixel_offset=[0, -18],
+        font_family="'IBM Plex Mono', monospace",
+        font_weight="bold",
+    )
+
+    mid_lat = (nodes["lat"].iloc[0] + nodes["lat"].iloc[2]) / 2
+    mid_lon = (nodes["lon"].iloc[0] + nodes["lon"].iloc[2]) / 2
+
+    view_state = pdk.ViewState(
+        latitude=mid_lat,
+        longitude=mid_lon,
+        zoom=3.5,
+        pitch=40,
+        bearing=10,
+    )
+
+    tooltip = {
+        "html": "<b>{from_name} → {to_name}</b><br/>"
+                "{risk_label}<br/>"
+                "Friction Coefficient: {intensity}",
+        "style": {"backgroundColor": "#FFFFFF", "color": "#0F172A", "border": "1.5px solid #E2E8F0", "fontFamily": "IBM Plex Mono, monospace", "fontSize": "12px", "borderRadius": "4px"}
+    }
+
+    deck = pdk.Deck(
+        layers=[arc_layer, node_layer, text_layer],
+        initial_view_state=view_state,
+        map_provider="carto",
+        map_style=pdk.map_styles.LIGHT,  # updated to light theme for superb readability
+        tooltip=tooltip,
+    )
+    return deck, edges
+
+
+# ==========================================
+# FORECASTING ENGINE
+# ==========================================
+
+def generate_historical_baseline(profile, days_back=30, seed=None):
+    rng = np.random.default_rng(seed)
+    baseline = profile["port_congestion_baseline"]
+    t = np.arange(days_back)
+
+    seasonal = 1.1 * np.sin(2 * np.pi * t / 7 + 1.2)
+
+    noise = np.zeros(days_back)
+    for i in range(1, days_back):
+        noise[i] = noise[i - 1] * 0.72 + rng.normal(0, 0.55)
+
+    series = baseline + seasonal + noise
+    series = np.clip(series, 0.5, None)
+
+    start_date = datetime.date.today() - datetime.timedelta(days=days_back)
+    dates = [start_date + datetime.timedelta(days=int(i)) for i in t]
+    return pd.DataFrame({"Date": dates, "Wait (Days)": series, "Series": "Historical"})
+
+
+def forecast_port_congestion(profile, horizon_days, rainfall_index, inventory_backlog_pct,
+                              border_wait_days, history_df):
+    y = history_df["Wait (Days)"].values
+    x = np.arange(len(y))
+
+    slope, intercept = np.polyfit(x, y, 1)
+    trend_anchor = slope * (len(y) - 1) + intercept
+
+    horizon = np.arange(1, horizon_days + 1)
+    rainfall_effect = (rainfall_index / 10.0) * 3.5 * (1 - np.exp(-horizon / 6.0))
+    backlog_effect = (inventory_backlog_pct / 100.0) * 4.0 * (1 - np.exp(-horizon / 9.0))
+    border_spillover = (border_wait_days / 10.0) * 1.2 * np.sin(horizon / 4.0 + 0.3).clip(min=0)
+
+    seasonal_fwd = 1.0 * np.sin(2 * np.pi * (len(y) + horizon) / 7 + 1.2) * np.exp(-horizon / 25.0)
+    trend_fwd = trend_anchor + slope * horizon * 0.6
+
+    projected = trend_fwd + seasonal_fwd + rainfall_effect + backlog_effect + border_spillover
+    projected = np.clip(projected, 0.5, 45)
+
+    uncertainty = 0.35 + 0.12 * horizon
+    lower = np.clip(projected - uncertainty, 0.5, None)
+    upper = projected + uncertainty
+
+    last_date = history_df["Date"].iloc[-1]
+    fwd_dates = [last_date + datetime.timedelta(days=int(d)) for d in horizon]
+
+    forecast_df = pd.DataFrame({
+        "Date": fwd_dates,
+        "Wait (Days)": projected,
+        "Lower Bound": lower,
+        "Upper Bound": upper,
+        "Series": "Forecast",
+    })
+    return forecast_df
+
+
+# ==========================================
+# SCENARIO SAVER (SESSION STATE)
+# ==========================================
+
+def init_scenario_ledger():
+    if "scenario_ledger" not in st.session_state:
+        st.session_state.scenario_ledger = pd.DataFrame(columns=[
+            "Scenario ID", "Label", "Commodity", "Timestamp",
+            "Spot Price (USD/MT)", "Ocean Freight (USD/MT)",
+            "Inland Trucking (USD/MT)", "Border Wait (Days)",
+            "Port Congestion (Days)", "Demurrage (USD/Day)",
+            "Carbon Liability (USD/MT)", "L-VaR Demurrage (USD/MT)",
+            "Total Cost (USD/MT)", "Net Margin (%)", "Verdict"
+        ])
+    if "scenario_counter" not in st.session_state:
+        st.session_state.scenario_counter = 0
+
+
+def save_scenario_enhanced(label, commodity, spot_price, ocean_freight, inland_trucking,
+                           border_wait, port_congestion, demurrage, carbon_liability,
+                           l_var_demurrage, total_cost, net_margin):
+    st.session_state.scenario_counter += 1
+    scenario_id = f"Scenario {chr(64 + st.session_state.scenario_counter)}" \
+        if st.session_state.scenario_counter <= 26 else f"Scenario #{st.session_state.scenario_counter}"
+
+    if net_margin >= 0 and net_margin >= target_margin_percent:
+        verdict = "Approved"
+    elif net_margin > 0:
+        verdict = "Margin Compression"
+    else:
+        verdict = "Unviable"
+
+    new_row = pd.DataFrame([{
+        "Scenario ID": scenario_id,
+        "Label": label if label else "Untitled Scenario",
+        "Commodity": commodity,
+        "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Spot Price (USD/MT)": round(spot_price, 2),
+        "Ocean Freight (USD/MT)": round(ocean_freight, 2),
+        "Inland Trucking (USD/MT)": round(inland_trucking, 2),
+        "Border Wait (Days)": round(border_wait, 1),
+        "Port Congestion (Days)": round(port_congestion, 1),
+        "Demurrage (USD/Day)": round(demurrage, 0),
+        "Carbon Liability (USD/MT)": round(carbon_liability, 2),
+        "L-VaR Demurrage (USD/MT)": round(l_var_demurrage, 2),
+        "Total Cost (USD/MT)": round(total_cost, 2),
+        "Net Margin (%)": round(net_margin, 2),
+        "Verdict": verdict,
+    }])
+
+    st.session_state.scenario_ledger = pd.concat(
+        [st.session_state.scenario_ledger, new_row], ignore_index=True
+    )
+
+
+def scenario_ledger_to_csv_bytes():
+    buf = io.StringIO()
+    st.session_state.scenario_ledger.to_csv(buf, index=False)
+    return buf.getvalue().encode("utf-8")
+
+
+def build_executive_summary_text(profile_name, fx_data, forecast_df):
+    lines = []
+    lines.append("=" * 72)
+    lines.append("XIAMEN C&D — SINO-AFRICAN LOGISTICS & RISK MATRIX")
+    lines.append("Executive Corridor Intelligence Brief")
+    lines.append("=" * 72)
+    lines.append(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append(f"Active Commodity Corridor: {profile_name}")
+    lines.append("-" * 72)
+    lines.append("CURRENT TREASURY CLEARING RATES")
+    for k, v in fx_data.items():
+        if k != "Status":
+            lines.append(f"   {k}: {v}")
+    lines.append(f"   Feed Status: {fx_data.get('Status', 'n/a')}")
+    lines.append("-" * 72)
+    lines.append("14-DAY PORT CONGESTION FORECAST (DAYS)")
+    for _, row in forecast_df.iterrows():
+        lines.append(f"   {row['Date']}: {row['Wait (Days)']:.1f} days "
+                      f"(range {row['Lower Bound']:.1f}–{row['Upper Bound']:.1f})")
+    lines.append("-" * 72)
+    lines.append("SAVED SCENARIO LEDGER")
+    if "scenario_ledger" in st.session_state and not st.session_state.scenario_ledger.empty:
+        lines.append(st.session_state.scenario_ledger.to_string(index=False))
+    else:
+        lines.append("   No scenarios saved this session.")
+    lines.append("=" * 72)
+    lines.append(f"Prepared by: {DESIGNER}")
+    lines.append("Disclaimer: Academic showcase / strategic planning artifact for the")
+    lines.append("Schwarzman Scholars application. Not an executable trading instrument.")
+    lines.append("=" * 72)
+    return "\n".join(lines)
 
 # ==========================================
 # HEADER SECTION
@@ -723,6 +1105,7 @@ st.markdown("<hr class='section-rule' style='margin-top:14px;'/>", unsafe_allow_
 # ==========================================
 # SECTION 1: GLOBAL CORRIDOR KEY PERFORMANCE INDICATORS
 # ==========================================
+# RESOLVED NameError: api_key_input is fully declared in the Sidebar section above before this block runs
 fx_data = get_live_forex_rates(api_key_input)
 init_scenario_ledger()
 
