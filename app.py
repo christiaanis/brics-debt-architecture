@@ -411,6 +411,7 @@ COMMODITY_PROFILES = {
         "port_congestion_baseline": 12.4,
         "border_post_label": "Beitbridge Border Post",
         "border_wait_baseline": 3.6,
+        "distances_km": {"Inland Road": 950, "Ocean": 11800},
         "route": [
             {"name": "Great Dyke (Mine)", "lat": -18.6, "lon": 30.5, "stage": "Extraction"},
             {"name": "Beitbridge Border Post", "lat": -22.2167, "lon": 30.0000, "stage": "Border Crossing"},
@@ -450,6 +451,7 @@ COMMODITY_PROFILES = {
         "port_congestion_baseline": 8.1,
         "border_post_label": "Machipanda Border Post",
         "border_wait_baseline": 2.1,
+        "distances_km": {"Inland Road": 580, "Ocean": 11400},
         "route": [
             {"name": "Bikita Minerals (Mine)", "lat": -19.95, "lon": 31.65, "stage": "Extraction"},
             {"name": "Machipanda Border Post", "lat": -19.1167, "lon": 32.9667, "stage": "Border Crossing"},
@@ -489,6 +491,7 @@ COMMODITY_PROFILES = {
         "port_congestion_baseline": 9.7,
         "border_post_label": "Nakonde Border Post (TAZARA Corridor)",
         "border_wait_baseline": 4.4,
+        "distances_km": {"Inland Road": 1280, "Ocean": 10500},
         "route": [
             {"name": "Copperbelt (Mine)", "lat": -12.8, "lon": 28.2, "stage": "Extraction"},
             {"name": "Nakonde Border Post", "lat": -9.3333, "lon": 32.7500, "stage": "Border Crossing"},
@@ -1071,7 +1074,7 @@ st.markdown(
 # ==========================================
 section_header(
     "Module 01 / Geospatial Intelligence",
-    f"Corridor Flow Model — {selected_commodity}",
+    "Corridor Flow Model — {selected_commodity}",
     "Interactive 3D geospatial mapping across Southern Africa corridors to Tianjin ports. Arcs are color-coded in real-time "
     "according to regional queue friction (Teal = Stable, Orange = Cautious, Red = Critical)."
 )
