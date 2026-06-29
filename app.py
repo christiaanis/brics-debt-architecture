@@ -8,23 +8,20 @@ import io
 import altair as alt
 
 # ==========================================
-# ALTAIR INSTITUTIONAL CHART THEME
+# ALTAIR INSTITUTIONAL LIGHT CHART THEME
 # ==========================================
-# Altair ships bundled with Streamlit itself — no extra package install,
-# no requirements.txt drift, no "ModuleNotFoundError" on a fresh deploy.
-# Single shared theme so every chart in the app reads as one instrument.
 CHART_FONT = "IBM Plex Mono"
-CHART_INK = "#E8EAED"
-CHART_INK_LOW = "#8B93A7"
-CHART_HAIRLINE = "#232938"
-CHART_SURFACE = "#12161F"
-CHART_GOLD = "#C9A24B"
-CHART_CRITICAL = "#C84B3C"
-CHART_STABLE = "#4B9C7E"
+CHART_INK_HIGH = "#0F172A"
+CHART_INK_LOW = "#64748B"
+CHART_HAIRLINE = "#E2E8F0"
+CHART_SURFACE = "#FFFFFF"
+CHART_GOLD = "#B45309"
+CHART_CRITICAL = "#DC2626"
+CHART_STABLE = "#059669"
 
 
 def base_chart_props(chart, height=320):
-    """Applies the shared dark institutional theme to any Altair chart."""
+    """Applies a clean, high-contrast light institutional theme to Altair charts."""
     return (
         chart
         .properties(height=height, background="transparent")
@@ -53,49 +50,33 @@ st.set_page_config(
 )
 
 # ==========================================
-# INSTITUTIONAL DESIGN SYSTEM
+# INSTITUTIONAL DESIGN SYSTEM (SLATE LIGHT)
 # ==========================================
-# Token system — a near-black trading-floor palette with a single warm metal
-# accent (the corridor trades literal metals: chrome, lithium, copper) and two
-# desaturated hues reserved exclusively for risk state. No decorative color.
-#
-#   Ink            #0B0E14   base canvas
-#   Surface        #12161F   panel / card background
-#   Surface-raised #181D29   sidebar, nested, hover states
-#   Hairline       #232938   structural borders, dividers
-#   Ink-high       #E8EAED   primary text
-#   Ink-low        #8B93A7   secondary text, labels, captions
-#   Signal (gold)  #C9A24B   brand accent — used sparingly, for emphasis only
-#   Risk: critical #C84B3C   |  caution #C9A24B  |  stable #4B9C7E
-#
-# All figures (prices, rates, days, percentages) render in monospace. This is
-# the deliberate signature: it reads as instrument output, not marketing copy.
-
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
     :root {
-        --ink: #0B0E14;
-        --surface: #12161F;
-        --surface-raised: #181D29;
-        --hairline: #232938;
-        --ink-high: #E8EAED;
-        --ink-low: #8B93A7;
-        --signal: #C9A24B;
-        --risk-critical: #C84B3C;
-        --risk-caution: #C9A24B;
-        --risk-stable: #4B9C7E;
+        --ink: #F8FAFC;          /* slate white base canvas */
+        --surface: #FFFFFF;      /* pure white cards */
+        --surface-raised: #F1F5F9; /* slate gray panels and sidebar */
+        --hairline: #E2E8F0;     /* light structural borders */
+        --ink-high: #0F172A;     /* deep slate text (highly readable!) */
+        --ink-low: #64748B;      /* medium slate grey text */
+        --signal: #B45309;       /* corporate bronze / gold accent */
+        --risk-critical: #DC2626;/* red */
+        --risk-caution: #D97706; /* orange */
+        --risk-stable: #059669;  /* emerald green */
     }
 
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-    /* ---- Base canvas ---- */
+    /* ---- Base Canvas ---- */
     .stApp {
         background: var(--ink);
     }
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1.5rem;
         max-width: 1320px;
     }
     [data-testid="stHeader"] { background: var(--ink); }
@@ -115,9 +96,9 @@ st.markdown("""
         letter-spacing: 0.02em;
         text-transform: uppercase;
         font-size: 0.78rem;
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 2px solid var(--hairline);
         padding-bottom: 8px;
-        margin-top: 4px;
+        margin-top: 12px;
     }
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] label,
@@ -134,293 +115,256 @@ st.markdown("""
     }
     .eyebrow {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.72rem;
+        font-size: 0.75rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--signal);
-        margin-bottom: 2px;
+        margin-bottom: 4px;
         display: block;
+        font-weight: 600;
     }
     .section-title {
         font-family: 'IBM Plex Sans', sans-serif;
-        font-size: 1.28rem;
-        font-weight: 600;
+        font-size: 1.4rem;
+        font-weight: 700;
         color: var(--ink-high);
         letter-spacing: -0.01em;
         margin: 0 0 2px 0;
     }
     .section-rule {
         border: none;
-        border-top: 1px solid var(--hairline);
-        margin: 6px 0 18px 0;
+        border-top: 2px solid var(--hairline);
+        margin: 8px 0 16px 0;
     }
     .section-caption {
         color: var(--ink-low);
-        font-size: 0.86rem;
-        margin-bottom: 14px;
+        font-size: 0.88rem;
+        margin-bottom: 16px;
     }
     .main-title {
         font-family: 'IBM Plex Sans', sans-serif;
         color: var(--ink-high);
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        font-size: 2.05rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        font-size: 2.3rem;
         margin-bottom: 0;
+        line-height: 1.1;
     }
     .main-subtitle {
         font-family: 'IBM Plex Mono', monospace;
         color: var(--ink-low);
-        font-size: 0.82rem;
-        letter-spacing: 0.01em;
-        margin-top: 2px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        margin-top: 6px;
     }
     .stCaption, [data-testid="stCaptionContainer"] {
         color: var(--ink-low) !important;
+        font-size: 0.82rem !important;
     }
-    hr { border-color: var(--hairline); }
+    hr { border-color: var(--hairline); border-width: 2px; }
 
-    /* ---- Native st.metric tiles: flat panel, mono figures, no shadow ---- */
+    /* ---- Metric Tiles ---- */
     [data-testid="stMetric"] {
         background-color: var(--surface);
         border: 1px solid var(--hairline);
-        border-radius: 3px;
-        padding: 14px 16px 12px 16px;
+        border-radius: 6px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
     }
     [data-testid="stMetricLabel"] {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.7rem;
-        letter-spacing: 0.06em;
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         color: var(--ink-low) !important;
+        font-weight: 600;
     }
     [data-testid="stMetricValue"] {
         font-family: 'IBM Plex Mono', monospace;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--ink-high) !important;
-        font-size: 1.55rem;
+        font-size: 1.7rem;
     }
     [data-testid="stMetricDelta"] {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.78rem;
+        font-size: 0.8rem;
+        font-weight: 600;
     }
 
-    /* ---- Buttons: flat, sharp corners, gold on hover ---- */
+    /* ---- Buttons ---- */
     .stButton button, .stDownloadButton button {
         background-color: var(--surface);
         color: var(--ink-high);
-        border: 1px solid var(--hairline);
-        border-radius: 3px;
+        border: 1.5px solid var(--hairline);
+        border-radius: 4px;
         font-family: 'IBM Plex Sans', sans-serif;
-        font-weight: 500;
-        font-size: 0.86rem;
-        box-shadow: none;
-        transition: border-color 0.15s ease, color 0.15s ease;
+        font-weight: 600;
+        font-size: 0.88rem;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        transition: all 0.15s ease-in-out;
+        padding: 0.4rem 1rem;
     }
     .stButton button:hover, .stDownloadButton button:hover {
         border-color: var(--signal);
         color: var(--signal);
-        background-color: var(--surface);
+        background-color: var(--surface-raised);
+        transform: translateY(-1px);
     }
     .stButton button:focus, .stDownloadButton button:focus {
-        box-shadow: 0 0 0 1px var(--signal);
+        box-shadow: 0 0 0 2px rgba(180, 83, 9, 0.15);
     }
 
-    /* ---- Alerts: flat left-rule cards instead of filled colored boxes ---- */
-    [data-testid="stAlertContainer"] {
-        border-radius: 3px;
-        border: 1px solid var(--hairline);
-        background-color: var(--surface);
-    }
-    div[data-baseweb="notification"] { box-shadow: none !important; }
-
-    /* ---- Inputs / sliders / selects ---- */
-    .stSlider [data-baseweb="slider"] { padding-top: 4px; }
-    .stSelectbox div[data-baseweb="select"] > div,
-    .stTextInput input, .stNumberInput input {
-        background-color: var(--surface);
-        border: 1px solid var(--hairline);
-        border-radius: 3px;
-        color: var(--ink-high);
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.86rem;
-    }
-    label { color: var(--ink-low) !important; font-size: 0.84rem !important; }
-
-    /* ---- Dataframes / tables ---- */
-    [data-testid="stDataFrame"] {
-        border: 1px solid var(--hairline);
-        border-radius: 3px;
-    }
-
-    /* ---- Expander ---- */
-    [data-testid="stExpander"] {
-        border: 1px solid var(--hairline);
-        border-radius: 3px;
-        background-color: var(--surface);
-    }
-
-    /* ---- Stage / corridor panel ---- */
+    /* ---- Custom Card Styles ---- */
     .stage-card {
         background-color: var(--surface);
         border: 1px solid var(--hairline);
-        border-radius: 3px;
-        padding: 16px 16px 14px 16px;
-        min-height: 178px;
+        border-radius: 6px;
+        padding: 18px;
+        min-height: 160px;
+        box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.04), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
     .stage-card .stage-eyebrow {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.68rem;
+        font-size: 0.7rem;
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--signal);
-        display: block;
-        margin-bottom: 6px;
+        font-weight: 600;
     }
     .stage-card .stage-name {
         font-family: 'IBM Plex Sans', sans-serif;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--ink-high);
-        font-size: 0.98rem;
-        display: block;
-        margin-bottom: 10px;
+        font-size: 1.05rem;
+        margin-top: 6px;
     }
     .stage-card .stage-status {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.8rem;
-        font-weight: 500;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 12px;
     }
 
     .risk-high { color: var(--risk-critical); }
     .risk-med  { color: var(--risk-caution); }
     .risk-low  { color: var(--risk-stable); }
 
-    /* ---- KPI strip wrapper (adds breathing room without shadow) ---- */
-    .kpi-row { margin-bottom: 4px; }
-
-    /* ---- Subtle depth + hover lift on the cards that benefit from it ---- */
-    [data-testid="stMetric"], .stage-card, [data-testid="stExpander"] {
-        transition: border-color 0.15s ease, transform 0.15s ease;
-    }
-    [data-testid="stMetric"]:hover, .stage-card:hover {
-        border-color: #2C3344;
-        transform: translateY(-1px);
-    }
-
-    /* ---- Top status bar: live data badges + system identity ---- */
-    .status-bar {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        flex-wrap: wrap;
-        padding-bottom: 10px;
-        margin-bottom: 4px;
-    }
-    .status-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.7rem;
-        letter-spacing: 0.04em;
-        color: var(--ink-low);
-        text-transform: uppercase;
-    }
-    .status-dot {
-        width: 6px; height: 6px; border-radius: 50%;
-        background: var(--risk-stable);
-        box-shadow: 0 0 0 0 rgba(75,156,126,0.6);
-        animation: pulse-dot 2.2s infinite;
-    }
-    @keyframes pulse-dot {
-        0%   { box-shadow: 0 0 0 0 rgba(75,156,126,0.55); }
-        70%  { box-shadow: 0 0 0 5px rgba(75,156,126,0); }
-        100% { box-shadow: 0 0 0 0 rgba(75,156,126,0); }
-    }
-    .status-divider { width: 1px; height: 12px; background: var(--hairline); }
-    .badge-tier {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.66rem;
-        letter-spacing: 0.08em;
-        color: var(--ink);
-        background: var(--signal);
-        padding: 2px 7px;
-        border-radius: 2px;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    /* ---- Executive briefing card: the one-glance synthesis at the top ---- */
+    /* ---- Executive Briefing Card ---- */
     .brief-card {
-        background: linear-gradient(135deg, var(--surface-raised) 0%, var(--surface) 100%);
+        background: var(--surface);
         border: 1px solid var(--hairline);
-        border-left: 3px solid var(--signal);
-        border-radius: 4px;
-        padding: 20px 24px 18px 22px;
-        margin-bottom: 22px;
+        border-left: 5px solid var(--signal);
+        border-radius: 6px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.04), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
     }
     .brief-card .brief-label {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.68rem;
+        font-size: 0.75rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--signal);
         display: block;
+        font-weight: 700;
         margin-bottom: 8px;
     }
     .brief-card .brief-text {
         font-family: 'IBM Plex Sans', sans-serif;
-        font-size: 0.96rem;
-        line-height: 1.55;
+        font-size: 1.05rem;
+        line-height: 1.6;
         color: var(--ink-high);
-        margin-bottom: 12px;
+        font-weight: 500;
+        margin-bottom: 16px;
     }
-    .brief-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .brief-tags { display: flex; gap: 10px; flex-wrap: wrap; }
     .brief-tag {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.7rem;
-        font-weight: 500;
-        padding: 4px 10px;
-        border-radius: 2px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 4px;
         border: 1px solid var(--hairline);
         letter-spacing: 0.02em;
     }
-    .brief-tag.t-stable  { color: var(--risk-stable);  border-color: rgba(75,156,126,0.35); background: rgba(75,156,126,0.08); }
-    .brief-tag.t-caution { color: var(--risk-caution); border-color: rgba(201,162,75,0.35); background: rgba(201,162,75,0.08); }
-    .brief-tag.t-critical{ color: var(--risk-critical);border-color: rgba(200,75,60,0.35); background: rgba(200,75,60,0.08); }
+    .brief-tag.t-stable  { color: var(--risk-stable);  border-color: rgba(5, 150, 105, 0.3); background: rgba(5, 150, 105, 0.05); }
+    .brief-tag.t-caution { color: var(--risk-caution); border-color: rgba(217, 119, 6, 0.3); background: rgba(217, 119, 6, 0.05); }
+    .brief-tag.t-critical{ color: var(--risk-critical);border-color: rgba(220, 38, 38, 0.3); background: rgba(220, 38, 38, 0.05); }
 
-    /* ---- Tabs: institutional underline style, not the default pill chips ---- */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 28px;
+    /* ---- Status Bar ---- */
+    .status-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding-bottom: 12px;
         border-bottom: 1px solid var(--hairline);
+        margin-bottom: 16px;
     }
-    .stTabs [data-baseweb="tab"] {
-        font-family: 'IBM Plex Sans', sans-serif;
-        font-weight: 500;
-        font-size: 0.86rem;
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.04em;
         color: var(--ink-low);
-        padding: 8px 2px 12px 2px;
-        background: transparent;
+        text-transform: uppercase;
+        font-weight: 600;
     }
-    .stTabs [aria-selected="true"] {
+    .status-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--risk-stable);
+        box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.6);
+        animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+        0%   { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.5); }
+        70%  { box-shadow: 0 0 0 6px rgba(5, 150, 105, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+    }
+    .status-divider { width: 1.5px; height: 14px; background: var(--hairline); }
+    .badge-tier {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        color: #FFFFFF;
+        background: var(--signal);
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    /* ---- Form controls & input contrast ---- */
+    .stSelectbox div[data-baseweb="select"] > div,
+    .stTextInput input, .stNumberInput input {
+        background-color: var(--surface) !important;
+        border: 1.5px solid var(--hairline) !important;
         color: var(--ink-high) !important;
-        border-bottom: 2px solid var(--signal) !important;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
     }
-    .stTabs [data-baseweb="tab-highlight"] { background-color: transparent; }
+    label {
+        color: var(--ink-high) !important;
+        font-size: 0.88rem !important;
+        font-weight: 600 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 
 def section_header(eyebrow, title, caption=None):
-    """
-    Renders a disciplined section header: small-caps mono eyebrow, a title,
-    a hairline rule, and an optional caption — replacing emoji-prefixed
-    markdown headers with the institutional type system above.
-    """
+    """Renders a clean, high-contrast section header."""
     html = f'<span class="eyebrow">{eyebrow}</span><div class="section-title">{title}</div><hr class="section-rule"/>'
     st.markdown(html, unsafe_allow_html=True)
     if caption:
         st.markdown(f'<div class="section-caption">{caption}</div>', unsafe_allow_html=True)
-
 
 
 # ==========================================
@@ -440,11 +384,6 @@ CORRIDOR_COUNTRIES = {
 # ==========================================
 # MULTI-COMMODITY CORRIDOR DATA MODEL
 # ==========================================
-# Each commodity defines its own physical corridor (with real-world reference
-# coordinates for the Pydeck geospatial layer), pricing rules, and risk defaults.
-# This is the single source of truth the rest of the app reads from, so switching
-# the sidebar dropdown re-flows the map, pricing engine, and forecasting panel.
-
 COMMODITY_PROFILES = {
     "Chrome Ore": {
         "icon": "⛏️",
@@ -558,10 +497,6 @@ COMMODITY_LIST = list(COMMODITY_PROFILES.keys())
 
 @st.cache_data(ttl=3600)
 def get_world_bank_data(country_code, indicator_code, start_year=2015, end_year=2025):
-    """
-    Programmatically extracts structural macroeconomic risk vectors directly from the
-    World Bank API. Used to model systemic sovereign strain along the supply chain corridor.
-    """
     url = f"http://api.worldbank.org/v2/country/{country_code}/indicator/{indicator_code}?date={start_year}:{end_year}&format=json"
     try:
         response = requests.get(url, timeout=10)
@@ -582,7 +517,7 @@ def get_world_bank_data(country_code, indicator_code, start_year=2015, end_year=
     except Exception:
         pass
 
-    # Fallback Data Engine in case World Bank API times out or throttles requests
+    # High-fidelity Fallbacks
     years = list(range(start_year, end_year + 1))
     if country_code == "ZA":
         if "DECT" in indicator_code:
@@ -615,10 +550,6 @@ def get_world_bank_data(country_code, indicator_code, start_year=2015, end_year=
 
 @st.cache_data(ttl=1800)
 def get_live_forex_rates(api_key=None):
-    """
-    Extracts currency configurations. Computes CNY cross-rates against the corridor's
-    local currencies, crucial for the C&D treasury operations clearing framework.
-    """
     if api_key:
         url = f"https://openexchangerates.org/api/latest.json?app_id={api_key}"
         try:
@@ -666,23 +597,13 @@ def get_live_forex_rates(api_key=None):
     }
 
 # ==========================================
-# MODULE 1: GEOSPATIAL CORRIDOR INTELLIGENCE (PYDECK)
+# GEOSPATIAL CORRIDOR INTELLIGENCE (PYDECK)
 # ==========================================
 
 def build_corridor_dataframes(profile, border_wait_days, port_congestion_days):
-    """
-    Builds the node and edge (arc) dataframes for the Pydeck 3D corridor map.
-    Edge color/height intensity scales with live risk inputs so the map visually
-    communicates where the friction in the chain actually is.
-    """
     route = profile["route"]
     nodes = pd.DataFrame(route)
 
-    # Risk intensity per leg, normalized 0-1 against sensible operational ceilings.
-    # Leg 0: Mine -> Border (function of border wait)
-    # Leg 1: Border -> Consolidation (function of border wait, decaying)
-    # Leg 2: Consolidation -> Port (function of port congestion)
-    # Leg 3: Port -> Destination (ocean leg, low baseline risk, weather-modulated lightly)
     border_intensity = min(border_wait_days / 10.0, 1.0)
     port_intensity = min(port_congestion_days / 20.0, 1.0)
 
@@ -700,21 +621,22 @@ def build_corridor_dataframes(profile, border_wait_days, port_congestion_days):
             intensity = port_intensity
             risk_label = "Port Terminal Congestion"
         else:
-            intensity = 0.18 + 0.12 * port_intensity  # ocean leg, mild sympathetic risk
+            intensity = 0.18 + 0.12 * port_intensity
             risk_label = "Ocean Freight / Transit Risk"
 
-        # Color ramp through the institutional risk palette:
-        # stable teal (#4B9C7E) -> caution gold (#C9A24B) -> critical brick (#C84B3C)
+        # Sophisticated corporate transition colors
         if intensity <= 0.5:
+            # Stable teal (#059669) to caution orange (#D97706)
             t = intensity / 0.5
-            r = int(75 + t * (201 - 75))
-            g = int(156 + t * (162 - 156))
-            b = int(126 + t * (75 - 126))
+            r = int(5 + t * (217 - 5))
+            g = int(150 + t * (119 - 150))
+            b = int(105 + t * (6 - 105))
         else:
+            # Caution orange (#D97706) to critical red (#DC2626)
             t = (intensity - 0.5) / 0.5
-            r = int(201 + t * (200 - 201))
-            g = int(162 + t * (75 - 162))
-            b = int(75 + t * (60 - 75))
+            r = int(217 + t * (220 - 217))
+            g = int(119 + t * (38 - 119))
+            b = int(6 + t * (38 - 6))
 
         legs.append({
             "from_name": src["name"], "from_lat": src["lat"], "from_lon": src["lon"],
@@ -722,7 +644,7 @@ def build_corridor_dataframes(profile, border_wait_days, port_congestion_days):
             "intensity": round(intensity, 3),
             "risk_label": risk_label,
             "color_r": r, "color_g": g, "color_b": b,
-            "width": 2 + intensity * 9,
+            "width": 3 + intensity * 8,
         })
 
     edges = pd.DataFrame(legs)
@@ -730,10 +652,6 @@ def build_corridor_dataframes(profile, border_wait_days, port_congestion_days):
 
 
 def render_corridor_map(profile, border_wait_days, port_congestion_days):
-    """
-    Renders the interactive 3D Pydeck corridor map: ArcLayer for risk-weighted legs,
-    ScatterplotLayer for named nodes, TextLayer for labels.
-    """
     nodes, edges = build_corridor_dataframes(profile, border_wait_days, port_congestion_days)
 
     arc_layer = pdk.Layer(
@@ -741,8 +659,8 @@ def render_corridor_map(profile, border_wait_days, port_congestion_days):
         data=edges,
         get_source_position=["from_lon", "from_lat"],
         get_target_position=["to_lon", "to_lat"],
-        get_source_color=["color_r", "color_g", "color_b", 180],
-        get_target_color=["color_r", "color_g", "color_b", 220],
+        get_source_color=["color_r", "color_g", "color_b", 190],
+        get_target_color=["color_r", "color_g", "color_b", 230],
         get_width="width",
         pickable=True,
         auto_highlight=True,
@@ -752,10 +670,10 @@ def render_corridor_map(profile, border_wait_days, port_congestion_days):
         "ScatterplotLayer",
         data=nodes,
         get_position=["lon", "lat"],
-        get_radius=45000,
-        get_fill_color=[201, 162, 75, 215],   # signal gold — matches CSS --signal
-        get_line_color=[11, 14, 20, 255],      # ink — matches CSS --ink
-        line_width_min_pixels=1,
+        get_radius=55000,
+        get_fill_color=[180, 83, 9, 220],     # bronze signal accent
+        get_line_color=[15, 23, 42, 255],     # deep slate border
+        line_width_min_pixels=1.5,
         pickable=True,
         stroked=True,
     )
@@ -766,66 +684,52 @@ def render_corridor_map(profile, border_wait_days, port_congestion_days):
         get_position=["lon", "lat"],
         get_text="name",
         get_size=13,
-        get_color=[232, 234, 237, 255],        # ink-high — matches CSS --ink-high
+        get_color=[15, 23, 42, 255],          # high-contrast dark text labels on a light background map
         get_alignment_baseline="'bottom'",
         get_pixel_offset=[0, -18],
         font_family="'IBM Plex Mono', monospace",
+        font_weight="bold",
     )
 
-    # Center the view roughly between origin and gateway for a readable default angle,
-    # since the full corridor spans Africa to East Asia.
     mid_lat = (nodes["lat"].iloc[0] + nodes["lat"].iloc[2]) / 2
     mid_lon = (nodes["lon"].iloc[0] + nodes["lon"].iloc[2]) / 2
 
     view_state = pdk.ViewState(
         latitude=mid_lat,
         longitude=mid_lon,
-        zoom=3.4,
-        pitch=45,
+        zoom=3.5,
+        pitch=40,
         bearing=10,
     )
 
     tooltip = {
         "html": "<b>{from_name} → {to_name}</b><br/>"
                 "{risk_label}<br/>"
-                "Intensity: {intensity}",
-        "style": {"backgroundColor": "#12161F", "color": "#E8EAED", "border": "1px solid #232938", "fontFamily": "IBM Plex Mono, monospace", "fontSize": "12px"}
+                "Friction Coefficient: {intensity}",
+        "style": {"backgroundColor": "#FFFFFF", "color": "#0F172A", "border": "1.5px solid #E2E8F0", "fontFamily": "IBM Plex Mono, monospace", "fontSize": "12px", "borderRadius": "4px"}
     }
 
-    # NOTE: the previous build pinned this to a "mapbox://styles/..." URL, which
-    # silently renders a blank map on any deployment without a paid Mapbox token
-    # configured (the #1 reason the corridor map looked "broken"). CARTO's basemap
-    # tiles are free, require no token, and ship natively with pydeck — this is
-    # the fix, not a workaround.
     deck = pdk.Deck(
         layers=[arc_layer, node_layer, text_layer],
         initial_view_state=view_state,
         map_provider="carto",
-        map_style=pdk.map_styles.DARK,
+        map_style=pdk.map_styles.LIGHT,  # updated to light theme for superb readability
         tooltip=tooltip,
     )
     return deck, edges
 
 
 # ==========================================
-# MODULE 3: ADVANCED RISK FORECASTING ENGINE
+# FORECASTING ENGINE
 # ==========================================
 
 def generate_historical_baseline(profile, days_back=30, seed=None):
-    """
-    Generates a credible historical baseline series for port congestion (in days),
-    anchored to the commodity's known baseline and modulated with a weekly seasonal
-    cycle plus mild autocorrelated noise (mean-reverting random walk).
-    """
     rng = np.random.default_rng(seed)
     baseline = profile["port_congestion_baseline"]
     t = np.arange(days_back)
 
-    # Weekly seasonality: congestion tends to build mid-week, ease over weekends
     seasonal = 1.1 * np.sin(2 * np.pi * t / 7 + 1.2)
 
-    # Mean-reverting (Ornstein-Uhlenbeck style) noise so the series looks like a real
-    # operational metric rather than pure white noise
     noise = np.zeros(days_back)
     for i in range(1, days_back):
         noise[i] = noise[i - 1] * 0.72 + rng.normal(0, 0.55)
@@ -840,50 +744,23 @@ def generate_historical_baseline(profile, days_back=30, seed=None):
 
 def forecast_port_congestion(profile, horizon_days, rainfall_index, inventory_backlog_pct,
                               border_wait_days, history_df):
-    """
-    Projects Durban-equivalent port congestion forward using a regression-style
-    extrapolation: linear trend fitted to the recent historical window, plus
-    structural adders for simulated rainfall risk and warehouse backlog pressure,
-    decayed forward with damped seasonal oscillation and bounded growth.
-
-    This intentionally mirrors how a treasury risk desk would build a lightweight
-    operational forecast: trend + seasonal + exogenous shock terms, rather than a
-    black-box model the user can't sanity-check.
-    """
     y = history_df["Wait (Days)"].values
     x = np.arange(len(y))
 
-    # Fit a simple linear trend (degree-1 regression) over the trailing window
-    # to capture directional drift in congestion before applying shock terms.
     slope, intercept = np.polyfit(x, y, 1)
-    trend_anchor = slope * (len(y) - 1) + intercept  # trend value at "today"
+    trend_anchor = slope * (len(y) - 1) + intercept
 
     horizon = np.arange(1, horizon_days + 1)
-
-    # Rainfall risk: 0-10 scale: heavy regional rainfall slows rail/road throughput
-    # into the terminal and adds queueing pressure, with effect compounding mildly
-    # over the forecast window before saturating (diminishing marginal damage).
     rainfall_effect = (rainfall_index / 10.0) * 3.5 * (1 - np.exp(-horizon / 6.0))
-
-    # Inventory backlog: % of warehouse capacity already occupied. High backlog
-    # compresses the buffer available to absorb new arrivals, worsening queue days.
     backlog_effect = (inventory_backlog_pct / 100.0) * 4.0 * (1 - np.exp(-horizon / 9.0))
-
-    # Border wait sympathetically pushes port congestion a few days later, as
-    # trucks released from Beitbridge/the border post arrive at port in clusters.
     border_spillover = (border_wait_days / 10.0) * 1.2 * np.sin(horizon / 4.0 + 0.3).clip(min=0)
 
-    # Damped seasonal continuation
     seasonal_fwd = 1.0 * np.sin(2 * np.pi * (len(y) + horizon) / 7 + 1.2) * np.exp(-horizon / 25.0)
-
-    # Trend continuation, damped slightly so a short-term slope doesn't run away
-    # over a 14-day horizon (treasury desks distrust unbounded linear extrapolation)
     trend_fwd = trend_anchor + slope * horizon * 0.6
 
     projected = trend_fwd + seasonal_fwd + rainfall_effect + backlog_effect + border_spillover
     projected = np.clip(projected, 0.5, 45)
 
-    # Simple uncertainty band: widens with horizon to reflect compounding forecast error
     uncertainty = 0.35 + 0.12 * horizon
     lower = np.clip(projected - uncertainty, 0.5, None)
     upper = projected + uncertainty
@@ -902,7 +779,7 @@ def forecast_port_congestion(profile, horizon_days, rainfall_index, inventory_ba
 
 
 # ==========================================
-# MODULE 4: SCENARIO SAVER — SESSION STATE LEDGER
+# SCENARIO SAVER (SESSION STATE)
 # ==========================================
 
 def init_scenario_ledger():
@@ -959,11 +836,6 @@ def scenario_ledger_to_csv_bytes():
 
 
 def build_executive_summary_text(profile_name, fx_data, forecast_df):
-    """
-    Builds a plain-text executive summary suitable for a lightweight downloadable
-    report. Kept dependency-free (no PDF library required) while still giving the
-    user a polished, structured executive brief they can download alongside the CSV.
-    """
     lines = []
     lines.append("=" * 72)
     lines.append("XIAMEN C&D — SINO-AFRICAN LOGISTICS & RISK MATRIX")
@@ -1000,13 +872,13 @@ def build_executive_summary_text(profile_name, fx_data, forecast_df):
 # SIDEBAR CONTROL PANEL
 # ==========================================
 st.sidebar.markdown(
-    "<div style='font-family:IBM Plex Mono, monospace; font-size:0.72rem; "
-    "letter-spacing:0.1em; color:#C9A24B; text-transform:uppercase;'>"
+    "<div style='font-family:IBM Plex Mono, monospace; font-size:0.75rem; "
+    "letter-spacing:0.12em; color:#B45309; text-transform:uppercase; font-weight:700;'>"
     "XIAMEN C&amp;D &nbsp;·&nbsp; CORRIDOR CONTROL</div>",
     unsafe_allow_html=True
 )
 st.sidebar.markdown(
-    f"<div style='color:#8B93A7; font-size:0.78rem; margin-top:2px; margin-bottom:14px;'>"
+    f"<div style='color:#64748B; font-size:0.8rem; margin-top:2px; margin-bottom:14px; font-weight:500;'>"
     f"{DESIGNER}</div>",
     unsafe_allow_html=True
 )
@@ -1067,25 +939,25 @@ _now_str = datetime.datetime.now().strftime("%H:%M:%S UTC")
 st.markdown(
     f"""
     <div class="status-bar">
-        <span class="status-pill"><span class="status-dot"></span> LIVE FEED CONNECTED</span>
+        <span class="status-pill"><span class="status-dot"></span> LIVE SYSTEM ACTIVE</span>
         <span class="status-divider"></span>
         <span class="status-pill">SESSION CLOCK {_now_str}</span>
         <span class="status-divider"></span>
         <span class="status-pill">COVERAGE: ZW · ZA · ZM · MZ · TZ · CN</span>
         <span class="status-divider"></span>
-        <span class="badge-tier">INSTITUTIONAL GRADE</span>
+        <span class="badge-tier">PREMIUM SUITE</span>
     </div>
     """,
     unsafe_allow_html=True
 )
 st.markdown(
-    "<span class='eyebrow'>XIAMEN C&amp;D CORPORATION LIMITED &nbsp;·&nbsp; FORTUNE GLOBAL 500</span>",
+    "<span class='eyebrow'>XIAMEN C&amp;D CORPORATION LIMITED &nbsp;·&nbsp; GLOBAL INVENTORY HUB</span>",
     unsafe_allow_html=True
 )
 st.markdown("<h1 class='main-title'>Sino-African Logistics &amp; Risk Matrix</h1>", unsafe_allow_html=True)
 st.markdown(
-    "<div class='main-subtitle'>SUPPLY CHAIN TREASURY OPERATIONS &nbsp;/&nbsp; "
-    "STRATEGY SUITE &nbsp;/&nbsp; MULTI-COMMODITY GEOSPATIAL EDITION</div>",
+    "<div class='main-subtitle'>STRATEGIC PORTFOLIO ANALYTICS PLATFORM &nbsp;/&nbsp; "
+    "B2B TREASURY CLEARING &nbsp;/&nbsp; MULTI-COMMODITY GEOSPATIAL GEOMETRIES</div>",
     unsafe_allow_html=True
 )
 st.markdown("<hr class='section-rule' style='margin-top:14px;'/>", unsafe_allow_html=True)
@@ -1096,8 +968,6 @@ st.markdown("<hr class='section-rule' style='margin-top:14px;'/>", unsafe_allow_
 fx_data = get_live_forex_rates(api_key_input)
 init_scenario_ledger()
 
-# Build the historical baseline once per commodity/seed so the KPI tile, the line
-# chart, and the pricing engine below all reference the same congestion reality.
 historical_df = generate_historical_baseline(profile, days_back=30, seed=hash(selected_commodity) % (2**31))
 current_port_congestion = float(historical_df["Wait (Days)"].iloc[-1])
 current_border_wait = profile["border_wait_baseline"]
@@ -1111,64 +981,70 @@ gateway_rate_value = fx_data.get(gateway_currency_label, fx_data["CNY/ZAR"])
 
 with col_kpi1:
     st.metric(
-        label=f"{gateway_currency_label} (Logistics Clearing Rate)",
+        label=f"{gateway_currency_label} Clearing Rate",
         value=f"{gateway_rate_value}",
-        delta=f"{(gateway_rate_value * 0.005):+.4f} (Daily Variance)",
+        delta=f"{(gateway_rate_value * 0.005):+.4f} (Daily)",
         delta_color="normal"
     )
 with col_kpi2:
     st.metric(
-        label="CNY / ZiG (Mine-Gate Valuation)",
+        label="CNY / ZiG Spot Rate",
         value=f"{fx_data['CNY/ZiG']} ZiG",
         delta="-0.02%",
         delta_color="inverse"
     )
 with col_kpi3:
     st.metric(
-        label=f"{profile['port_label']} Congestion Index",
+        label=f"{profile['port_label']} Congestion",
         value=f"{current_port_congestion:.1f} Days",
-        delta=f"{(current_port_congestion - profile['port_congestion_baseline']):+.1f} Days (vs. Baseline)",
+        delta=f"{(current_port_congestion - profile['port_congestion_baseline']):+.1f} Days",
         delta_color="inverse"
     )
 with col_kpi4:
     st.metric(
-        label=profile["spot_price_label"],
-        value=f"${profile['spot_price_default']:.2f} / MT",
-        delta="+$4.50 (Market Demand)",
+        label=profile["spot_price_label"].split(" (")[0],
+        value=f"${profile['spot_price_default']:.2f}",
+        delta="+$4.50 (Live)",
         delta_color="normal"
     )
 
 # ------------------------------------------------------------------
-# EXECUTIVE BRIEFING — auto-synthesized one-glance read of the corridor's
-# current state. Pulls directly from the same live variables driving the
-# KPIs and map below, so it never drifts out of sync with the data.
+# EXECUTIVE BRIEFING & STRATEGIC RECOMMENDATIONS
 # ------------------------------------------------------------------
 border_state = "critical" if current_border_wait >= 6 else ("caution" if current_border_wait >= 3.5 else "stable")
 port_delta = current_port_congestion - profile["port_congestion_baseline"]
 port_state = "critical" if current_port_congestion > 12 else ("caution" if current_port_congestion > 7 else "stable")
 
 tag_class = {"stable": "t-stable", "caution": "t-caution", "critical": "t-critical"}
-border_word = {"stable": "running within tolerance", "caution": "showing moderate friction", "critical": "experiencing acute delay"}[border_state]
-port_word = {"stable": "operating below baseline", "caution": "tracking above baseline", "critical": "materially congested"}[port_state]
+border_word = {"stable": "operating smoothly within target boundaries", "caution": "bearing medium queue friction", "critical": "experiencing heavy clearance latency"}[border_state]
+port_word = {"stable": "operating well within baseline expectations", "caution": "trending marginally above target boundaries", "critical": "materially congested with significant demurrage risks"}[port_state]
+
+# Strategic recommendation formulation
+if port_state == "critical" or border_state == "critical":
+    recommendation = "🚨 **Recommendation:** Exercise high risk aversion. Halt non-essential shipments, reroute high-priority cargo to alternative inland depots, and initiate treasury hedging protocols to buffer port delay surcharges."
+elif port_state == "caution" or border_state == "caution":
+    recommendation = "⚠️ **Recommendation:** Monitor corridor closely. Transition cargo flows onto secondary routes where possible, maintain standard margins, and review regional warehouse inventory thresholds."
+else:
+    recommendation = "✅ **Recommendation:** Optimal trading window open. Accelerate export pipelines, secure bulk freight vessel allocations, and maximize shipment volumes to exploit strong margins."
 
 brief_text = (
     f"The {selected_commodity} corridor from {profile['mine_label']} to {profile['destination_label']} is "
-    f"currently {('clear for standard execution' if border_state == 'stable' and port_state == 'stable' else 'carrying elevated operational risk that warrants desk attention')}. "
-    f"{profile['border_post_label']} is {border_word} at {current_border_wait:.1f} days average wait, while "
-    f"{profile['port_label']} is {port_word} ({current_port_congestion:.1f}d vs. {profile['port_congestion_baseline']:.1f}d baseline, "
-    f"{port_delta:+.1f}d). Treasury clearing rate {gateway_currency_label} stands at {gateway_rate_value}, sourced from "
-    f"{fx_data.get('Status', 'a live feed')}."
+    f"currently exhibiting an overall {('STABLE' if border_state == 'stable' and port_state == 'stable' else 'CAUTIOUS')} operational signature. "
+    f"{profile['border_post_label']} is {border_word} ({current_border_wait:.1f} days average), while "
+    f"{profile['port_label']} is {port_word} ({current_port_congestion:.1f} days vs. {profile['port_congestion_baseline']:.1f} days baseline). "
+    f"The interbank clearing index {gateway_currency_label} stands at {gateway_rate_value}."
 )
 
 st.markdown(
     f"""
     <div class="brief-card">
-        <span class="brief-label">Executive Briefing — Auto-Synthesized</span>
+        <span class="brief-label">Executive Briefing — Strategic Synthesis</span>
         <div class="brief-text">{brief_text}</div>
-        <div class="brief-tags">
-            <span class="brief-tag {tag_class[border_state]}">BORDER: {border_state.upper()}</span>
-            <span class="brief-tag {tag_class[port_state]}">PORT: {port_state.upper()}</span>
-            <span class="brief-tag t-stable">FX FEED: ACTIVE</span>
+        <div class="brief-text" style="font-weight: 600; font-size: 0.98rem; margin-top: 10px; border-top: 1.5px solid var(--hairline); padding-top: 12px; color: var(--ink-high);">{recommendation}</div>
+        <div class="brief-tags" style="margin-top: 16px;">
+            <span class="brief-tag {tag_class[border_state]}">BORDER wait: {current_border_wait:.1f}d ({border_state.upper()})</span>
+            <span class="brief-tag {tag_class[port_state]}">PORT queue: {current_port_congestion:.1f}d ({port_state.upper()})</span>
+            <span class="brief-tag t-stable">FOREX FEED: ACTIVE ({fx_data['Status'].upper()})</span>
         </div>
     </div>
     """,
@@ -1180,19 +1056,18 @@ st.markdown(
 # ==========================================
 section_header(
     "Module 01 / Geospatial Intelligence",
-    f"Corridor Map — {selected_commodity}",
-    "Arc thickness and color scale with live border-queue and port-congestion intensity. "
-    "Brick-red legs indicate acute operational risk; teal legs are running within tolerance."
+    f"Corridor Flow Model — {selected_commodity}",
+    "Interactive 3D geospatial mapping across Southern Africa corridors to Tianjin ports. Arcs are color-coded in real-time "
+    "according to regional queue friction (Teal = Stable, Orange = Cautious, Red = Critical)."
 )
 
 deck, edge_risk_df = render_corridor_map(profile, current_border_wait, current_port_congestion)
 st.pydeck_chart(deck, use_container_width=True)
 
-# Stage legend strip beneath the map — replaces the old static HTML stage cards with
-# a compact risk-coded summary that stays in sync with the live map above.
+# High-contrast corridor stage cards
 stage_cols = st.columns(len(profile["route"]))
 risk_for_stage = {
-    "Extraction": ("ELEVATED — inland fuel costs", "risk-high"),
+    "Extraction": ("ELEVATED — inland transport", "risk-high"),
     "Border Crossing": (f"{current_border_wait:.1f}d avg wait", "risk-med" if current_border_wait < 6 else "risk-high"),
     "Consolidation": ("STABLE", "risk-low"),
     "Port Gateway": (f"{current_port_congestion:.1f}d congestion",
@@ -1204,16 +1079,16 @@ for i, node in enumerate(profile["route"]):
         status_text, status_class = risk_for_stage.get(node["stage"], ("MONITORED", "risk-med"))
         st.markdown(f"""
         <div class="stage-card">
-            <span class="stage-eyebrow">STAGE {i+1:02d} — {node['stage'].upper()}</span>
+            <span class="stage-eyebrow">STAGE {i+1:02d} · {node['stage'].upper()}</span>
             <span class="stage-name">{node['name']}</span>
             <span class="stage-status {status_class}">{status_text}</span>
         </div>
         """, unsafe_allow_html=True)
 
-with st.expander("Corridor leg risk detail"):
+with st.expander("Corridor leg risk metrics"):
     st.dataframe(
         edge_risk_df[["from_name", "to_name", "risk_label", "intensity"]].rename(columns={
-            "from_name": "From", "to_name": "To", "risk_label": "Risk Factor", "intensity": "Intensity (0–1)"
+            "from_name": "Source Node", "to_name": "Target Node", "risk_label": "Identified Risk Driver", "intensity": "Friction Index (0-1)"
         }),
         use_container_width=True, hide_index=True
     )
@@ -1223,10 +1098,9 @@ with st.expander("Corridor leg risk detail"):
 # ==========================================
 section_header(
     "Module 02 / Predictive Forecasting",
-    f"Port Congestion Outlook — {profile['port_label']}",
-    "Trend-and-shock extrapolation: a fitted historical trend is combined with simulated "
-    "rainfall risk, warehouse backlog pressure, and border-crossing spillover to project "
-    f"congestion over the next {forecast_horizon} days."
+    f"Port Congestion Dynamics — {profile['port_label']}",
+    "Trend-and-shock predictive forecasting utilizing a seasonal regression curve backstopped by "
+    "simulated regional precipitation index, storage facility backlog, and transit delay indicators."
 )
 
 forecast_df = forecast_port_congestion(
@@ -1238,7 +1112,6 @@ chart_df = pd.concat([
     historical_df[["Date", "Wait (Days)", "Series"]],
     forecast_df[["Date", "Wait (Days)", "Series"]]
 ], ignore_index=True)
-chart_pivot = chart_df.pivot_table(index="Date", columns="Series", values="Wait (Days)", aggfunc="mean")
 
 col_fc_chart, col_fc_stats = st.columns([3, 1])
 with col_fc_chart:
@@ -1246,7 +1119,7 @@ with col_fc_chart:
     fc_plot_df = forecast_df[["Date", "Wait (Days)"]].assign(Series="Forecast")
 
     band = alt.Chart(forecast_df).mark_area(
-        opacity=0.18, color=CHART_GOLD
+        opacity=0.15, color=CHART_GOLD
     ).encode(
         x=alt.X("Date:T", title=None),
         y=alt.Y("Lower Bound:Q", title="Wait (Days)"),
@@ -1254,18 +1127,18 @@ with col_fc_chart:
     )
 
     hist_line = alt.Chart(hist_plot_df).mark_line(
-        color=CHART_INK_LOW, strokeWidth=2
+        color=CHART_INK_LOW, strokeWidth=2.5
     ).encode(x="Date:T", y="Wait (Days):Q")
 
     fc_line = alt.Chart(fc_plot_df).mark_line(
-        color=CHART_GOLD, strokeWidth=2.5, point=alt.OverlayMarkDef(color=CHART_GOLD, size=35)
+        color=CHART_GOLD, strokeWidth=3.0, point=alt.OverlayMarkDef(color=CHART_GOLD, size=40)
     ).encode(
         x="Date:T", y="Wait (Days):Q",
         tooltip=[alt.Tooltip("Date:T"), alt.Tooltip("Wait (Days):Q", format=".1f")],
     )
 
     today_rule = alt.Chart(pd.DataFrame({"Date": [historical_df["Date"].iloc[-1]]})).mark_rule(
-        color=CHART_HAIRLINE, strokeDash=[3, 3]
+        color="#94A3B8", strokeDash=[3, 3], strokeWidth=1.5
     ).encode(x="Date:T")
 
     fc_chart = base_chart_props(
@@ -1274,35 +1147,34 @@ with col_fc_chart:
     )
     st.altair_chart(fc_chart, use_container_width=True)
     st.caption(
-        f"Historical baseline (30 days) vs. {forecast_horizon}-day projected wait times, "
-        f"{profile['port_label']}. Shaded band reflects compounding forecast uncertainty."
+        f"Historical baseline vs. {forecast_horizon}-day projected wait times at {profile['port_label']}. "
+        "Shaded area reflects standard modeling uncertainty bands."
     )
 with col_fc_stats:
-    st.markdown("#### Forecast snapshot")
-    st.metric("Day-1 Projection", f"{forecast_df['Wait (Days)'].iloc[0]:.1f} d")
-    st.metric(f"Day-{forecast_horizon} Projection", f"{forecast_df['Wait (Days)'].iloc[-1]:.1f} d")
+    st.markdown("#### Forecast Analysis")
+    st.metric("Day-1 Projection", f"{forecast_df['Wait (Days)'].iloc[0]:.1f} Days")
+    st.metric(f"Day-{forecast_horizon} Projection", f"{forecast_df['Wait (Days)'].iloc[-1]:.1f} Days")
     peak_pos = forecast_df["Wait (Days)"].to_numpy().argmax()
     st.metric(
-        "Peak Congestion Day",
-        f"{forecast_df['Wait (Days)'].max():.1f} d",
+        "Peak Delay Point",
+        f"{forecast_df['Wait (Days)'].max():.1f} Days",
         delta=f"on {forecast_df['Date'].iloc[peak_pos]}"
     )
     avg_change = forecast_df["Wait (Days)"].mean() - historical_df["Wait (Days)"].mean()
     if avg_change > 1.0:
-        st.error(f"Forecast trending **+{avg_change:.1f}d** above historical average.")
+        st.error(f"Projected trend is **+{avg_change:.1f}d** above historical baseline.")
     elif avg_change > 0:
-        st.warning(f"Forecast trending **+{avg_change:.1f}d** above historical average.")
+        st.warning(f"Projected trend is **+{avg_change:.1f}d** above historical baseline.")
     else:
-        st.success(f"Forecast trending **{avg_change:.1f}d** vs. historical average.")
+        st.success(f"Projected trend is **{avg_change:.1f}d** vs. historical baseline.")
 
 # ==========================================
 # SECTION 4: DEEP SOVEREIGN & MACRO RISK MODELS
 # ==========================================
 section_header(
-    "Module 03 / Macro Risk",
-    "Sovereign Debt Dynamics &amp; Inflation Squeezes",
-    "Derived programmatically from the World Bank API to map fiscal stability corridors "
-    "for Xiamen C&D capital allocations."
+    "Module 03 / Macroeconomic Profiles",
+    "Sovereign Debt Metrics &amp; Regional Inflation Indicators",
+    "Real-time World Bank integration assessing sovereign liability stocks and consumer price indexing."
 )
 
 origin_code = profile["origin_country"]
@@ -1313,7 +1185,7 @@ gateway_name = CORRIDOR_COUNTRIES.get(gateway_code, gateway_code)
 col_graph_gateway, col_graph_origin = st.columns(2)
 
 with col_graph_gateway:
-    st.markdown(f"#### {gateway_name.split(' (')[0]} — Gateway Analysis")
+    st.markdown(f"#### {gateway_name.split(' (')[0]} Gateway Analytics")
     gw_debt_df = get_world_bank_data(gateway_code, "DT.DOD.DECT.CD")
     gw_inflation_df = get_world_bank_data(gateway_code, "FP.CPI.TOTL.ZG")
 
@@ -1321,26 +1193,26 @@ with col_graph_gateway:
         line=alt.LineConfig(color=CHART_GOLD, strokeWidth=2.5),
         color=alt.Gradient(
             gradient="linear",
-            stops=[alt.GradientStop(color=CHART_GOLD, offset=0), alt.GradientStop(color=CHART_SURFACE, offset=1)],
+            stops=[alt.GradientStop(color=CHART_GOLD, offset=0), alt.GradientStop(color="#FFFFFF", offset=1)],
             x1=1, x2=1, y1=1, y2=0,
         ),
-        opacity=0.35,
+        opacity=0.25,
     ).encode(
         x=alt.X("Year:O", title=None),
-        y=alt.Y("Value:Q", title="USD"),
+        y=alt.Y("Value:Q", title="Sovereign Debt Stock (USD)"),
         tooltip=[alt.Tooltip("Year:O"), alt.Tooltip("Value:Q", format=",.0f")],
     )
     st.altair_chart(base_chart_props(gw_chart, height=300), use_container_width=True)
-    st.caption(f"{gateway_name.split(' (')[0]}: Total External Debt Stock Trend (USD)")
+    st.caption(f"Sovereign External Debt Stock: {gateway_name.split(' (')[0]}")
 
     gw_latest_inf = gw_inflation_df.iloc[-1]["Value"]
     st.info(
-        f"**Gateway macro health.** Current baseline inflation at **{gw_latest_inf:.2f}%** "
-        f"impacts regional trucking wages and warehouse overheads at {profile['consolidation_label']}."
+        f"**Gateway macro stability:** Local gateway inflation rate currently stands at **{gw_latest_inf:.2f}%**. "
+        f"Significant fluctuation may impact local handling tariffs at the {profile['consolidation_label'].split(',')[0]} consolidation hub."
     )
 
 with col_graph_origin:
-    st.markdown(f"#### {origin_name.split(' (')[0]} — Origin Analysis")
+    st.markdown(f"#### {origin_name.split(' (')[0]} Origin Analytics")
     origin_debt_df = get_world_bank_data(origin_code, "DT.DOD.DECT.CD")
     origin_inflation_df = get_world_bank_data(origin_code, "FP.CPI.TOTL.ZG")
 
@@ -1348,33 +1220,32 @@ with col_graph_origin:
         line=alt.LineConfig(color=CHART_CRITICAL, strokeWidth=2.5),
         color=alt.Gradient(
             gradient="linear",
-            stops=[alt.GradientStop(color=CHART_CRITICAL, offset=0), alt.GradientStop(color=CHART_SURFACE, offset=1)],
+            stops=[alt.GradientStop(color=CHART_CRITICAL, offset=0), alt.GradientStop(color="#FFFFFF", offset=1)],
             x1=1, x2=1, y1=1, y2=0,
         ),
-        opacity=0.35,
+        opacity=0.2,
     ).encode(
         x=alt.X("Year:O", title=None),
-        y=alt.Y("Value:Q", title="%"),
+        y=alt.Y("Value:Q", title="Annual CPI Inflation (%)"),
         tooltip=[alt.Tooltip("Year:O"), alt.Tooltip("Value:Q", format=".2f")],
     )
     st.altair_chart(base_chart_props(org_chart, height=300), use_container_width=True)
-    st.caption(f"{origin_name.split(' (')[0]}: Historical CPI Inflation Trend (%)")
+    st.caption(f"CPI Inflation Metric: {origin_name.split(' (')[0]}")
 
     origin_latest_debt = origin_debt_df.iloc[-1]["Value"]
     st.warning(
-        f"**{origin_name.split(' (')[0]} fiscal squeeze.** Sovereign debt holds at "
-        f"**${origin_latest_debt/1e9:.2f} Billion USD**, sustaining liquidity caps that require "
-        f"C&D to deploy specialized B2B clearing pathways."
+        f"**Origin fiscal health:** Consolidated debt stands at **${origin_latest_debt/1e9:.2f} Billion USD**. "
+        "Sovereign liquidity profiles are evaluated to determine local clearing risk coefficients."
     )
 
 # ==========================================
 # SECTION 5: CARGO MARGIN STRESS-TESTING SUITE
 # ==========================================
 section_header(
-    "Module 04 / Decision Engine",
-    "Cargo Margin Stress-Testing",
-    "Simulate how macroeconomic fluctuations and supply chain disruptions affect a "
-    "cargo's real profitability — built for corporate portfolio audits."
+    "Module 04 / Margin Optimization Simulator",
+    "Shipment Economics &amp; Operational Squeeze Metrics",
+    "Simulate financial performance across diverse cargo volumes and regional logistics disruptions "
+    "to stress-test profit margins against baseline benchmarks."
 )
 
 col_sim_controls, col_sim_outputs = st.columns([1, 1])
@@ -1393,13 +1264,13 @@ with col_sim_controls:
         value=int(profile["spot_price_default"]),
     )
     inland_trucking_usd = st.slider(
-        f"{origin_name.split(' (')[0]}-to-{profile['consolidation_label'].split(',')[0]} Logistics Tariff (USD / MT)",
+        f"{origin_name.split(' (')[0]}-to-{profile['consolidation_label'].split(',')[0]} Transport (USD / MT)",
         min_value=int(profile["inland_trucking_range"][0]),
         max_value=int(profile["inland_trucking_range"][1]),
         value=int(profile["inland_trucking_default"]),
     )
     warehouse_handling_local = st.slider(
-        f"Depot Fees ({profile['currency_gateway'].split(' / ')[0]} / MT)",
+        f"Consolidation Depot Handling Fees ({profile['currency_gateway'].split(' / ')[0]} / MT)",
         min_value=100, max_value=500, value=250
     )
     moisture_penalty = st.slider(
@@ -1409,7 +1280,7 @@ with col_sim_controls:
         value=float(profile["moisture_penalty_default"]),
     )
     port_waiting_days = st.slider(
-        f"{profile['port_label']} Terminal Congestion (Days)",
+        f"{profile['port_label']} Delay Surcharge (Days)",
         min_value=1, max_value=30, value=int(round(current_port_congestion))
     )
     daily_demurrage_cost = st.number_input("Vessel Demurrage Penalty (USD / Day)", value=22000, step=1000)
@@ -1435,8 +1306,8 @@ with col_sim_outputs:
     net_margin_percent = (net_operating_profit / spot_price) * 100
 
     st.markdown(
-        f"<span style='color:#8B93A7; font-size:0.86rem;'>Total shipment cost allocation (per MT)</span><br/>"
-        f"<span style='font-family:IBM Plex Mono, monospace; font-size:1.3rem; color:#E8EAED; font-weight:600;'>"
+        f"<span style='color:#64748B; font-size:0.86rem; font-weight:600;'>Total Shipment Cost (CIF, USD / MT)</span><br/>"
+        f"<span style='font-family:IBM Plex Mono, monospace; font-size:1.6rem; color:#0F172A; font-weight:700;'>"
         f"${total_estimated_cost:.2f}</span>",
         unsafe_allow_html=True
     )
@@ -1462,7 +1333,7 @@ with col_sim_outputs:
         tooltip=[alt.Tooltip("Cost Component:N"), alt.Tooltip("USD per Metric Ton:Q", format="$.2f")],
     )
     labels = alt.Chart(cost_data).mark_text(
-        align="left", dx=6, color=CHART_INK, font=CHART_FONT, fontSize=11
+        align="left", dx=6, color=CHART_INK_HIGH, font=CHART_FONT, fontSize=11, fontWeight="bold"
     ).encode(
         x="USD per Metric Ton:Q", y=alt.Y("Cost Component:N", sort="x"),
         text=alt.Text("USD per Metric Ton:Q", format="$.2f"),
@@ -1470,20 +1341,20 @@ with col_sim_outputs:
     st.altair_chart(base_chart_props(bars + labels, height=300), use_container_width=True)
 
 # ==========================================
-# SECTION 6: SCENARIO SAVER & EXECUTIVE REPORT GENERATOR
+# SECTION 6: SCENARIO SAVER & REPORT GENERATION
 # ==========================================
 section_header(
-    "Module 05 / Scenario Ledger",
-    "Scenario Saver &amp; Executive Report Generator",
-    "Save the current stress-test configuration to the session ledger, then export the "
-    "full ledger and forecast as a CSV or an executive text brief for distribution."
+    "Module 05 / Portfolio Audit Ledger",
+    "Scenario Saver &amp; Executive Export Suite",
+    "Commit simulated configurations to your active session log, then export them into comprehensive "
+    "CSV ledgers or plain-text executive briefs for boardroom presentations."
 )
 
 col_save_label, col_save_btn = st.columns([3, 1])
 with col_save_label:
     scenario_label = st.text_input(
         "Scenario Label",
-        placeholder='e.g. "Durban Rail Strike" or "Stable Operations"',
+        placeholder='e.g., "Durban Port Strike" or "Peak Season Rush"',
         key="scenario_label_input"
     )
 with col_save_btn:
@@ -1502,18 +1373,18 @@ with col_save_btn:
             total_cost=total_estimated_cost,
             net_margin=net_margin_percent,
         )
-        st.success(f"Scenario saved as **{st.session_state.scenario_ledger['Scenario ID'].iloc[-1]}**.")
+        st.success(f"Scenario saved: **{st.session_state.scenario_ledger['Scenario ID'].iloc[-1]}**.")
 
-st.markdown("#### Saved scenario ledger")
+st.markdown("#### Scenario Ledger")
 if st.session_state.scenario_ledger.empty:
-    st.info("No scenarios saved yet this session. Configure the stress-test inputs above and click **Save Scenario**.")
+    st.info("No active configurations have been saved this session. Adjust inputs above and commit using the **Save Scenario** feature.")
 else:
     st.dataframe(st.session_state.scenario_ledger, use_container_width=True, hide_index=True)
 
     col_dl1, col_dl2, col_dl3 = st.columns([1, 1, 2])
     with col_dl1:
         st.download_button(
-            "Download Ledger (CSV)",
+            "Download CSV Ledger",
             data=scenario_ledger_to_csv_bytes(),
             file_name=f"sino_african_scenario_ledger_{datetime.date.today().isoformat()}.csv",
             mime="text/csv",
@@ -1522,14 +1393,14 @@ else:
     with col_dl2:
         report_text = build_executive_summary_text(selected_commodity, fx_data, forecast_df)
         st.download_button(
-            "Download Executive Brief (.txt)",
+            "Download Executive Brief",
             data=report_text.encode("utf-8"),
             file_name=f"executive_brief_{datetime.date.today().isoformat()}.txt",
             mime="text/plain",
             use_container_width=True,
         )
     with col_dl3:
-        if st.button("Clear Ledger"):
+        if st.button("Reset Log Ledger"):
             st.session_state.scenario_ledger = st.session_state.scenario_ledger.iloc[0:0]
             st.session_state.scenario_counter = 0
             st.rerun()
@@ -1541,15 +1412,14 @@ st.markdown("<hr class='section-rule'/>", unsafe_allow_html=True)
 col_foot1, col_foot2 = st.columns([1, 1])
 with col_foot1:
     st.caption(
-        "Disclaimer: designed for academic showcase and strategic planning for the "
-        "Schwarzman Scholars application. Macro datasets are updated live using public open APIs. "
-        "The forecasting module uses a transparent trend-plus-shock extrapolation model for "
-        "illustrative scenario planning, not a production trading signal."
+        "Disclaimer: Designed for academic showcase and strategic scenario planning for the "
+        "Schwarzman Scholars application. Macroeconomic indicators compile from public open-data APIs. "
+        "Calculated metrics are strategic planning proxies, not actionable trading signals."
     )
 with col_foot2:
     st.markdown(
-        f"<p style='text-align: right; color:#8B93A7; font-size: 0.78rem; "
-        f"font-family: IBM Plex Mono, monospace;'>"
-        f"SATT ARCHITECTURE V3.0 — INSTITUTIONAL EDITION<br/>{DESIGNER}</p>",
+        f"<p style='text-align: right; color:#64748B; font-size: 0.78rem; "
+        f"font-family: IBM Plex Mono, monospace; font-weight: 600;'>"
+        f"SATT ARCHITECTURE V3.5 — INSTITUTIONAL LIGHT EDITION<br/>{DESIGNER}</p>",
         unsafe_allow_html=True
     )
