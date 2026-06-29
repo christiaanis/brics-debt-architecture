@@ -354,19 +354,10 @@ eof
 
 ---
 
-### How to Run Your Web App (Step-by-Step):
+### What to Do Next
 
-1. **Set Up the Files on GitHub:**
-   * Inside your browser's GitHub Codespace editor, paste the above code block into a file named `app.py`.
-   * Create a companion file named `requirements.txt` containing the following dependencies:
-     ```text
-     streamlit==1.32.0
-     pandas
-     requests
-     numpy
-     ```
-2. **Execute the Application:**
-   * Open the Terminal at the bottom of your browser window in Codespaces and type:
-     ```bash
-     pip install -r requirements.txt
-     streamlit run app.py
+1. **Paste this clean code** into your `app.py` in the Codespace editor (overwriting everything currently in that file).
+2. Save the file.
+3. Open your terminal at the bottom and run:
+   ```bash
+   python -m streamlit run app.py
