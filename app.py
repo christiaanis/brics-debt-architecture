@@ -412,6 +412,11 @@ COMMODITY_PROFILES = {
         "border_post_label": "Beitbridge Border Post",
         "border_wait_baseline": 3.6,
         "distances_km": {"Inland Road": 950, "Ocean": 11800},
+        "co2_factors": {
+            "Inland Trucking": 0.082,  # kg CO2 / ton-km
+            "Diesel Rail": 0.018,      # kg CO2 / ton-km
+            "Ocean Bulker": 0.005      # kg CO2 / ton-km
+        },
         "route": [
             {"name": "Great Dyke (Mine)", "lat": -18.6, "lon": 30.5, "stage": "Extraction"},
             {"name": "Beitbridge Border Post", "lat": -22.2167, "lon": 30.0000, "stage": "Border Crossing"},
@@ -420,9 +425,9 @@ COMMODITY_PROFILES = {
             {"name": "Tianjin Port, China", "lat": 39.0027, "lon": 117.7164, "stage": "Discharge"},
         ],
         "routes_alt": {
-            "Standard Road (Beitbridge)": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.72, "desc": "Standard inland trucking across Beitbridge; vulnerable to crossing bottlenecks."},
-            "TAZARA Rail Alignment": {"cost_add": -12.50, "days_add": 4.5, "risk_idx": 0.38, "desc": "Utilizes integrated bulk rail; reduces tariff costs but incurs tracking latency."},
-            "Maputo Deepwater Corridor": {"cost_add": 8.00, "days_add": -2.0, "risk_idx": 0.50, "desc": "Direct diversion to Maputo port; skips Durban queues at slightly higher base tariffs."}
+            "Standard Road (Beitbridge)": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.72, "mode": "Inland Trucking", "desc": "Standard inland trucking across Beitbridge; vulnerable to crossing bottlenecks."},
+            "TAZARA Rail Alignment": {"cost_add": -12.50, "days_add": 4.5, "risk_idx": 0.38, "mode": "Diesel Rail", "desc": "Utilizes integrated bulk rail; reduces tariff costs but incurs tracking latency."},
+            "Maputo Deepwater Corridor": {"cost_add": 8.00, "days_add": -2.0, "risk_idx": 0.50, "mode": "Inland Trucking", "desc": "Direct diversion to Maputo port; skips Durban queues at slightly higher base tariffs."}
         }
     },
     "Lithium Spodumene": {
@@ -452,6 +457,11 @@ COMMODITY_PROFILES = {
         "border_post_label": "Machipanda Border Post",
         "border_wait_baseline": 2.1,
         "distances_km": {"Inland Road": 580, "Ocean": 11400},
+        "co2_factors": {
+            "Inland Trucking": 0.082,
+            "Diesel Rail": 0.018,
+            "Ocean Bulker": 0.005
+        },
         "route": [
             {"name": "Bikita Minerals (Mine)", "lat": -19.95, "lon": 31.65, "stage": "Extraction"},
             {"name": "Machipanda Border Post", "lat": -19.1167, "lon": 32.9667, "stage": "Border Crossing"},
@@ -460,9 +470,9 @@ COMMODITY_PROFILES = {
             {"name": "Tianjin Port, China", "lat": 39.0027, "lon": 117.7164, "stage": "Discharge"},
         ],
         "routes_alt": {
-            "Beira Railway Corridor": {"cost_add": -15.00, "days_add": 3.0, "risk_idx": 0.40, "desc": "Direct narrow-gauge rail from Machipanda to Beira terminals."},
-            "Intermodal Road Heavy": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.65, "desc": "Heavy fleet road haulage; subject to local infrastructure decay."},
-            "Nacala Deepwater Bypass": {"cost_add": 22.00, "days_add": -1.5, "risk_idx": 0.30, "desc": "Long haul bypass to Nacala's natural deepwater harbor; maximizes safety indexes."}
+            "Beira Railway Corridor": {"cost_add": -15.00, "days_add": 3.0, "risk_idx": 0.40, "mode": "Diesel Rail", "desc": "Direct narrow-gauge rail from Machipanda to Beira terminals."},
+            "Intermodal Road Heavy": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.65, "mode": "Inland Trucking", "desc": "Heavy fleet road haulage; subject to local infrastructure decay."},
+            "Nacala Deepwater Bypass": {"cost_add": 22.00, "days_add": -1.5, "risk_idx": 0.30, "mode": "Inland Trucking", "desc": "Long haul bypass to Nacala's natural deepwater harbor; maximizes safety indexes."}
         }
     },
     "Refined Copper": {
@@ -492,6 +502,11 @@ COMMODITY_PROFILES = {
         "border_post_label": "Nakonde Border Post (TAZARA Corridor)",
         "border_wait_baseline": 4.4,
         "distances_km": {"Inland Road": 1280, "Ocean": 10500},
+        "co2_factors": {
+            "Inland Trucking": 0.082,
+            "Diesel Rail": 0.018,
+            "Ocean Bulker": 0.005
+        },
         "route": [
             {"name": "Copperbelt (Mine)", "lat": -12.8, "lon": 28.2, "stage": "Extraction"},
             {"name": "Nakonde Border Post", "lat": -9.3333, "lon": 32.7500, "stage": "Border Crossing"},
@@ -500,9 +515,9 @@ COMMODITY_PROFILES = {
             {"name": "Shanghai Port, China", "lat": 31.2304, "lon": 121.4737, "stage": "Discharge"},
         ],
         "routes_alt": {
-            "TAZARA Corridor Rail": {"cost_add": -20.00, "days_add": 5.0, "risk_idx": 0.45, "desc": "State-to-state sovereign rail connection to Dar es Salaam; highly efficient but slow."},
-            "Lobito Atlantic Bypass": {"cost_add": 15.00, "days_add": -4.0, "risk_idx": 0.35, "desc": "Reroutes copper flows westward via the Lobito Corridor to access direct US/EU shipping lanes."},
-            "Standard East Coast Road": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.70, "desc": "Standard highway transport; subject to heavy weight checkpoint delays."}
+            "TAZARA Corridor Rail": {"cost_add": -20.00, "days_add": 5.0, "risk_idx": 0.45, "mode": "Diesel Rail", "desc": "State-to-state sovereign rail connection to Dar es Salaam; highly efficient but slow."},
+            "Lobito Atlantic Bypass": {"cost_add": 15.00, "days_add": -4.0, "risk_idx": 0.35, "mode": "Inland Trucking", "desc": "Reroutes copper flows westward via the Lobito Corridor to access direct US/EU shipping lanes."},
+            "Standard East Coast Road": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.70, "mode": "Inland Trucking", "desc": "Standard highway transport; subject to heavy weight checkpoint delays."}
         }
     },
 }
