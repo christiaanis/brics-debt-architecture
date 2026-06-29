@@ -411,7 +411,7 @@ COMMODITY_PROFILES = {
         "port_congestion_baseline": 12.4,
         "border_post_label": "Beitbridge Border Post",
         "border_wait_baseline": 3.6,
-        "distances_km": {"Inland Road": 950, "Ocean": 11800},
+        "distances_km": {"Inland Road": 950, "Inland Rail": 1100, "Ocean": 11800},
         "co2_factors": {
             "Inland Trucking": 0.082,  # kg CO2 / ton-km
             "Diesel Rail": 0.018,      # kg CO2 / ton-km
@@ -456,7 +456,7 @@ COMMODITY_PROFILES = {
         "port_congestion_baseline": 8.1,
         "border_post_label": "Machipanda Border Post",
         "border_wait_baseline": 2.1,
-        "distances_km": {"Inland Road": 580, "Ocean": 11400},
+        "distances_km": {"Inland Road": 580, "Inland Rail": 620, "Ocean": 11400},
         "co2_factors": {
             "Inland Trucking": 0.082,
             "Diesel Rail": 0.018,
@@ -501,7 +501,7 @@ COMMODITY_PROFILES = {
         "port_congestion_baseline": 9.7,
         "border_post_label": "Nakonde Border Post (TAZARA Corridor)",
         "border_wait_baseline": 4.4,
-        "distances_km": {"Inland Road": 1280, "Ocean": 10500},
+        "distances_km": {"Inland Road": 1280, "Inland Rail": 1860, "Ocean": 10500},
         "co2_factors": {
             "Inland Trucking": 0.082,
             "Diesel Rail": 0.018,
@@ -822,14 +822,16 @@ def init_scenario_ledger():
             "Spot Price (USD/MT)", "Ocean Freight (USD/MT)",
             "Inland Trucking (USD/MT)", "Border Wait (Days)",
             "Port Congestion (Days)", "Demurrage (USD/Day)",
+            "Carbon Liability (USD/MT)", "L-VaR Demurrage (USD/MT)",
             "Total Cost (USD/MT)", "Net Margin (%)", "Verdict"
         ])
     if "scenario_counter" not in st.session_state:
         st.session_state.scenario_counter = 0
 
 
-def save_scenario(label, commodity, spot_price, ocean_freight, inland_trucking,
-                   border_wait, port_congestion, demurrage, total_cost, net_margin):
+def save_scenario_enhanced(label, commodity, spot_price, ocean_freight, inland_trucking,
+                           border_wait, port_congestion, demurrage, carbon_liability,
+                           l_var_demurrage, total_cost, net_margin):
     st.session_state.scenario_counter += 1
     scenario_id = f"Scenario {chr(64 + st.session_state.scenario_counter)}" \
         if st.session_state.scenario_counter <= 26 else f"Scenario #{st.session_state.scenario_counter}"
@@ -852,6 +854,8 @@ def save_scenario(label, commodity, spot_price, ocean_freight, inland_trucking,
         "Border Wait (Days)": round(border_wait, 1),
         "Port Congestion (Days)": round(port_congestion, 1),
         "Demurrage (USD/Day)": round(demurrage, 0),
+        "Carbon Liability (USD/MT)": round(carbon_liability, 2),
+        "L-VaR Demurrage (USD/MT)": round(l_var_demurrage, 2),
         "Total Cost (USD/MT)": round(total_cost, 2),
         "Net Margin (%)": round(net_margin, 2),
         "Verdict": verdict,
@@ -1436,116 +1440,313 @@ with col_swap_stats:
 
 
 # ==========================================
-# MODULE 06: CARGO MARGIN STRESS-TESTING SUITE
+# MODULE 06: SCOPE 3 CARBON FOOTPRINT & CBAM TAX LIABILITY SIMULATOR
 # ==========================================
 section_header(
-    "Module 06 / Margin Optimization Simulator",
-    "Shipment Economics &amp; Operational Squeeze Metrics",
-    "Simulate financial performance across diverse cargo volumes and regional logistics disruptions "
-    "to stress-test profit margins against baseline benchmarks."
+    "Module 06 / Sustainability Analytics",
+    "Scope 3 Carbon Footprint &amp; CBAM Surcharge Simulator",
+    "Programmatic emissions tracking along regional corridors. Calculates Scope 3 intermodal transit footprints "
+    "and simulates direct financial liability under the EU Carbon Border Adjustment Mechanism (CBAM)."
 )
 
-col_sim_controls, col_sim_outputs = st.columns([1, 1])
+col_co2_inputs, col_co2_outputs = st.columns([1, 1])
 
-gateway_fx_rate = {
-    "ZA": fx_data["USD/ZAR"], "MZ": fx_data["USD/MZN"],
-    "TZ": fx_data["USD/TZS"], "ZM": fx_data["USD/ZMW"]
-}.get(gateway_code, fx_data["USD/ZAR"])
+# Baseline emission calculation factors based on selected route mode and distances
+active_mode = route_data.get("mode", "Inland Trucking")
+inland_km = profile["distances_km"].get("Inland Road" if active_mode == "Inland Trucking" else "Inland Rail", 800)
+ocean_km = profile["distances_km"].get("Ocean", 11000)
 
-with col_sim_controls:
-    st.markdown("#### Input operational friction points")
-    spot_price = st.slider(
-        f"{profile['spot_price_label']}",
-        min_value=int(profile["spot_price_range"][0]),
-        max_value=int(profile["spot_price_range"][1]),
-        value=int(profile["spot_price_default"]),
+with col_co2_inputs:
+    st.markdown("#### Sustainability Parameters")
+    carbon_price_usd = st.slider(
+        "CBAM Carbon Surcharge Rate (USD / Metric Ton CO2e)",
+        min_value=0, max_value=180, value=85, step=5,
+        help="Simulates tax exposure matching current and projected EU Emission Trading System (ETS) carbon prices."
     )
-    # Factor route arbitrage offset adjustments directly into simulated freight costs
-    freight_arbitrage_offset = route_data["cost_add"]
-    transit_arbitrage_offset = route_data["days_add"]
-
-    inland_trucking_usd = st.slider(
-        f"{origin_name.split(' (')[0]}-to-{profile['consolidation_label'].split(',')[0]} Transport (USD / MT)",
-        min_value=int(profile["inland_trucking_range"][0]),
-        max_value=int(profile["inland_trucking_range"][1]),
-        value=int(profile["inland_trucking_default"]),
+    offset_tier = st.selectbox(
+        "Certified Voluntary Carbon Offset Strategy",
+        options=["No Offsets", "Verra VCS Forestry ($12 / tCO2e)", "Gold Standard cookstoves ($18 / tCO2e)", "Direct Air Capture ($95 / tCO2e)"]
     )
-    warehouse_handling_local = st.slider(
-        f"Consolidation Depot Handling Fees ({profile['currency_gateway'].split(' / ')[0]} / MT)",
-        min_value=100, max_value=500, value=250
-    )
-    moisture_penalty = st.slider(
-        profile["moisture_penalty_label"],
-        min_value=float(profile["moisture_penalty_range"][0]),
-        max_value=float(profile["moisture_penalty_range"][1]),
-        value=float(profile["moisture_penalty_default"]),
-    )
-    port_waiting_days = st.slider(
-        f"{profile['port_label']} Delay Surcharge (Days)",
-        min_value=1, max_value=30, value=int(round(current_port_congestion + transit_arbitrage_offset))
-    )
-    daily_demurrage_cost = st.number_input("Vessel Demurrage Penalty (USD / Day)", value=22000, step=1000)
+    
+    # Define pricing offsets
+    offset_prices = {
+        "No Offsets": 0.0,
+        "Verra VCS Forestry ($12 / tCO2e)": 12.0,
+        "Gold Standard cookstoves ($18 / tCO2e)": 18.0,
+        "Direct Air Capture ($95 / tCO2e)": 95.0
+    }
+    selected_offset_rate = offset_prices[offset_tier]
 
-    warehouse_usd = warehouse_handling_local / gateway_fx_rate
-    port_holding_usd = (port_waiting_days * daily_demurrage_cost) / vessel_capacity
+with col_co2_outputs:
+    st.markdown("#### Emissions Intensity Metrics & Liabilities")
+    
+    # Calculate mode specific emission factor
+    inland_factor = profile["co2_factors"].get("Inland Trucking" if active_mode == "Inland Trucking" else "Diesel Rail", 0.082)
+    ocean_factor = profile["co2_factors"].get("Ocean Bulker", 0.005)
+    
+    # Scope 3 Calculations per Metric Ton of cargo
+    inland_co2_kg = inland_km * inland_factor
+    ocean_co2_kg = ocean_km * ocean_factor
+    total_co2_kg = inland_co2_kg + ocean_co2_kg
+    total_co2_tons_per_cargo_mt = total_co2_kg / 1000.0  # CO2 tons per cargo metric ton
+    
+    cbam_liability_usd_per_mt = total_co2_tons_per_cargo_mt * carbon_price_usd
+    mitigation_offset_cost_per_mt = total_co2_tons_per_cargo_mt * selected_offset_rate
+    
+    col_em1, col_co2_t2 = st.columns(2)
+    with col_em1:
+        st.metric(
+            label="Corridor Carbon Intensity",
+            value=f"{total_co2_kg:.1f} kg CO2e / MT",
+            delta=f"Inland Mode: {active_mode}",
+            delta_color="normal" if active_mode == "Diesel Rail" else "inverse"
+        )
+    with col_co2_t2:
+        st.metric(
+            label="Estimated CBAM Surcharge",
+            value=f"${cbam_liability_usd_per_mt:.2f} / MT",
+            delta=f"Offset Cost: ${mitigation_offset_cost_per_mt:.2f} / MT",
+            delta_color="inverse"
+        )
 
-with col_sim_outputs:
-    st.markdown("#### Real-time financial model")
+# Comparative carbon footprint visualization across all route modes for the active commodity
+carbon_viz_data = []
+for alt_name, alt_val in route_opts.items():
+    alt_mode = alt_val["mode"]
+    alt_inland_km = profile["distances_km"].get("Inland Road" if alt_mode == "Inland Trucking" else "Inland Rail", 800)
+    alt_inland_factor = profile["co2_factors"].get("Inland Trucking" if alt_mode == "Inland Trucking" else "Diesel Rail", 0.082)
+    
+    alt_inland_co2 = alt_inland_km * alt_inland_factor
+    alt_ocean_co2 = ocean_km * ocean_factor
+    alt_total = (alt_inland_co2 + alt_ocean_co2)
+    
+    carbon_viz_data.append({
+        "Pathway Option": alt_name,
+        "Transit Mode": alt_mode,
+        "Inland Footprint (kg CO2e)": round(alt_inland_co2, 1),
+        "Ocean Footprint (kg CO2e)": round(alt_ocean_co2, 1),
+        "Total Footprint (kg CO2e)": round(alt_total, 1)
+    })
 
+carbon_viz_df = pd.DataFrame(carbon_viz_data)
+
+carbon_chart = alt.Chart(carbon_viz_df).mark_bar(size=26).encode(
+    x=alt.X("Total Footprint (kg CO2e):Q", title="Total Footprint (kg CO2e per Metric Ton Cargo)"),
+    y=alt.Y("Pathway Option:N", sort="x", title=None),
+    color=alt.Color("Transit Mode:N", scale=alt.Scale(domain=["Inland Trucking", "Diesel Rail"], range=[CHART_GOLD, CHART_STABLE])),
+    tooltip=["Pathway Option:N", "Transit Mode:N", "Total Footprint (kg CO2e):Q"]
+)
+st.altair_chart(base_chart_props(carbon_chart, height=220), use_container_width=True)
+st.caption("Sourcing Carbon Audit: Total greenhouse gas emissions intensity comparing alternative inland pathway choices.")
+
+
+# ==========================================
+# MODULE 07: QUANTITATIVE LOGISTICS VALUE-AT-RISK (L-VaR) ENGINE
+# ==========================================
+section_header(
+    "Module 07 / Quantitative Risk Analysis",
+    "Logistics Value-at-Risk (L-VaR) Monte Carlo Engine",
+    "Under volatile supply chain environments, single-point delay estimates fail. This quantitative risk simulator "
+    "runs a 500-iteration Monte Carlo simulation modeling transit queue volatility to calculate tail risk capital "
+    "losses driven by demurrage."
+)
+
+col_mc_inputs, col_mc_outputs = st.columns([1, 1])
+
+# L-VaR input parameters
+with col_mc_inputs:
+    st.markdown("#### L-VaR Simulation Drivers")
+    delay_volatility_pct = st.slider(
+        "Transit Delay Volatility Coefficient (Standard Deviation %)",
+        min_value=15, max_value=95, value=45, step=5,
+        help="Adjusts the standard deviation (volatility) of the lognormal probability distribution."
+    )
+    risk_horizon_days = st.number_input(
+        "Risk Assessment Horizon (Days)",
+        min_value=5, max_value=90, value=14, step=5
+    )
+
+# Execute 500-run Monte Carlo Simulation using Lognormal distribution
+# mu represents expected delays (port waiting + border crossing)
+expected_total_queue = current_port_congestion + current_border_wait + transit_arbitrage_offset
+v = delay_volatility_pct / 100.0
+
+# Lognormal parameter transformations
+# E[X] = exp(mu + 0.5 * sigma^2)
+sigma_log = np.sqrt(np.log(1.0 + (v**2)))
+mu_log = np.log(expected_total_queue) - 0.5 * (sigma_log**2)
+
+# Generate pseudo-random delay iterations (pinned seed for stable chart updates)
+np_rng = np.random.default_rng(seed=hash(selected_commodity) % (2**31))
+simulated_delays = np_rng.lognormal(mean=mu_log, sigma=sigma_log, size=500)
+
+# Convert delays directly to Demurrage Costs per MT
+simulated_demurrage_mt = (simulated_delays * daily_demurrage_cost) / vessel_capacity
+
+# Calculate key Value-at-Risk statistical cutoffs
+l_var_95_per_mt = np.percentile(simulated_demurrage_mt, 95)
+l_var_99_per_mt = np.percentile(simulated_demurrage_mt, 99)
+expected_demurrage_mt = np.mean(simulated_demurrage_mt)
+
+with col_mc_outputs:
+    st.markdown("#### Quantitative Tail Risk Output")
+    
+    col_lvar1, col_lvar2 = st.columns(2)
+    with col_lvar1:
+        st.metric(
+            label="95% Logistics Value-at-Risk (L-VaR)",
+            value=f"${l_var_95_per_mt:.2f} / MT",
+            delta=f"Max expected penalty 95% of times",
+            delta_color="inverse"
+        )
+    with col_lvar2:
+        st.metric(
+            label="99% Extreme L-VaR Threshold",
+            value=f"${l_var_99_per_mt:.2f} / MT",
+            delta=f"Worst-case 1% risk scenario",
+            delta_color="inverse"
+        )
+    
+    st.caption(
+        f"**L-VaR Interpretation:** Under the current volatility profile, there is a 5% statistical probability that "
+        f"demurrage costs driven by queue delays will exceed **${l_var_95_per_mt:.2f}** per Metric Ton of cargo shipped."
+    )
+
+# Render Probability Density Histogram for L-VaR
+hist_bins = pd.DataFrame({"Demurrage Cost ($/MT)": simulated_demurrage_mt})
+hist_chart = alt.Chart(hist_bins).mark_bar(color="#94A3B8", opacity=0.6).encode(
+    x=alt.X("Demurrage Cost ($/MT):Q", bin=alt.Bin(maxbins=35), title="Simulated Demurrage Penalty Cost (USD per Metric Ton)"),
+    y=alt.Y("count()", title="Probability Frequency (Iterations)")
+)
+
+# Vertical threshold marker lines
+var_95_line = alt.Chart(pd.DataFrame({"x": [l_var_95_per_mt]})).mark_rule(
+    color=CHART_GOLD, strokeDash=[4, 4], strokeWidth=2
+).encode(x="x:Q")
+
+var_99_line = alt.Chart(pd.DataFrame({"x": [l_var_99_per_mt]})).mark_rule(
+    color=CHART_CRITICAL, strokeDash=[4, 4], strokeWidth=2
+).encode(x="x:Q")
+
+mean_line = alt.Chart(pd.DataFrame({"x": [expected_demurrage_mt]})).mark_rule(
+    color=CHART_STABLE, strokeWidth=1.5
+).encode(x="x:Q")
+
+l_var_histogram = base_chart_props(hist_chart + var_95_line + var_99_line + mean_line, height=260)
+st.altair_chart(l_var_histogram, use_container_width=True)
+st.markdown(
+    f"<div style='text-align: center; font-size: 0.78rem; font-family: IBM Plex Mono, monospace; color: var(--ink-low);'>"
+    f"<span style='color: {CHART_STABLE}; font-weight: bold;'>— Expected Demurrage: ${expected_demurrage_mt:.2f}</span> &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"<span style='color: {CHART_GOLD}; font-weight: bold;'>- - - 95% L-VaR: ${l_var_95_per_mt:.2f}</span> &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"<span style='color: {CHART_CRITICAL}; font-weight: bold;'>- - - 99% L-VaR: ${l_var_99_per_mt:.2f}</span>"
+    f"</div>",
+    unsafe_allow_html=True
+)
+
+
+# ==========================================
+# MODULE 08: COMPREHENSIVE MARGIN OPTIMIZER WITH INTEGRATED RISKS
+# ==========================================
+section_header(
+    "Module 08 / Margin Optimization Simulator",
+    "Shipment Economics &amp; Integrated Risk-Carbon Squeezes",
+    "This global trade simulator ties together logistics cost arrays, alternative route deltas, currency swap spreads, "
+    "Scope 3 carbon tax liabilities, and L-VaR capital buffers."
+)
+
+col_sim_controls_e, col_sim_outputs_e = st.columns([1, 1])
+
+with col_sim_controls_e:
+    st.markdown("#### Quantitative Risk Configuration")
+    
+    apply_carbon_tax = st.checkbox(
+        "Apply Scope 3 / CBAM Surcharge to Total Cost Matrix",
+        value=True,
+        help="Injects computed Carbon Border Adjustment liabilities directly into cargo costs."
+    )
+    
+    apply_risk_buffer = st.selectbox(
+        "Demurrage Risk Capital Buffer Method",
+        options=["Standard Congestion Pricing", "95% L-VaR Capital Reserve", "99% L-VaR Capital Reserve (Stress)"],
+        help="Select standard demurrage tracking, or lock down capital reserves based on simulated L-VaR tail thresholds."
+    )
+
+with col_sim_outputs_e:
+    st.markdown("#### Real-time Integrated Squeeze Model")
+    
+    # Calculate final demurrage and carbon parameters to map
+    carbon_tax_liability_per_mt = cbam_liability_usd_per_mt if apply_carbon_tax else 0.0
+    
+    if apply_risk_buffer == "95% L-VaR Capital Reserve":
+        demurrage_cost_to_apply = l_var_95_per_mt
+    elif apply_risk_buffer == "99% L-VaR Capital Reserve (Stress)":
+        demurrage_cost_to_apply = l_var_99_per_mt
+    else:
+        demurrage_cost_to_apply = port_holding_usd  # standard delay
+        
+    # Standard base variables recalculation
     raw_minegate_purchase = spot_price * profile["minegate_pct_of_cif"]
     inland_freight = inland_trucking_usd + freight_arbitrage_offset
     depot_and_customs = warehouse_usd
-    demurrage_and_port = port_holding_usd
     ocean_freight = fixed_freight_cost
     impurity_penalty = moisture_penalty
-
-    total_estimated_cost = (
+    
+    # Compute fully integrated pricing
+    integrated_total_estimated_cost = (
         raw_minegate_purchase + inland_freight + depot_and_customs
-        + demurrage_and_port + ocean_freight + impurity_penalty
+        + demurrage_cost_to_apply + ocean_freight + impurity_penalty
+        + carbon_tax_liability_per_mt
     )
-    net_operating_profit = spot_price - total_estimated_cost
-    net_margin_percent = (net_operating_profit / spot_price) * 100
-
+    
+    integrated_net_operating_profit = spot_price - integrated_total_estimated_cost
+    integrated_net_margin_percent = (integrated_net_operating_profit / spot_price) * 100
+    
     st.markdown(
-        f"<span style='color:#64748B; font-size:0.86rem; font-weight:600;'>Total Shipment Cost (CIF, USD / MT)</span><br/>"
+        f"<span style='color:#64748B; font-size:0.86rem; font-weight:600;'>Integrated Shipment Cost (CIF, USD / MT)</span><br/>"
         f"<span style='font-family:IBM Plex Mono, monospace; font-size:1.6rem; color:#0F172A; font-weight:700;'>"
-        f"${total_estimated_cost:.2f}</span>",
+        f"${integrated_total_estimated_cost:.2f}</span>",
         unsafe_allow_html=True
     )
     st.write("")
 
-    if net_margin_percent >= target_margin_percent:
-        st.success(f"**Operation approved.** Simulated margin is **{net_margin_percent:.2f}%** (exceeds target of {target_margin_percent}%)")
-    elif net_margin_percent > 0:
-        st.warning(f"**Margin compression.** Simulated margin is **{net_margin_percent:.2f}%** (below target of {target_margin_percent}%)")
+    if integrated_net_margin_percent >= target_margin_percent:
+        st.success(f"**Operation approved.** Integrated margin is **{integrated_net_margin_percent:.2f}%** (exceeds target of {target_margin_percent}%)")
+    elif integrated_net_margin_percent > 0:
+        st.warning(f"**Margin compression.** Integrated margin is **{integrated_net_margin_percent:.2f}%** (below target of {target_margin_percent}%)")
     else:
-        st.error(f"**Shipment unviable.** Negative margin projected (**{net_margin_percent:.2f}%**)")
+        st.error(f"**Shipment unviable.** Negative integrated margin projected (**{integrated_net_margin_percent:.2f}%**)")
 
-    cost_data = pd.DataFrame({
-        "Cost Component": ["Mine-gate Cost", "Inland Freight", "Depot & Handling",
-                            "Port Demurrage", "Ocean Freight", "Impurity Penalty"],
-        "USD per Metric Ton": [raw_minegate_purchase, inland_freight, depot_and_customs,
-                                demurrage_and_port, ocean_freight, impurity_penalty]
+    # Complete 7-Factor cost breakdown dataset
+    integrated_cost_data = pd.DataFrame({
+        "Cost Component": [
+            "Mine-gate Cost", "Inland Freight", "Depot & Handling", 
+            "Port Demurrage", "Ocean Freight", "Impurity Penalty", "Carbon Surcharge"
+        ],
+        "USD per Metric Ton": [
+            raw_minegate_purchase, inland_freight, depot_and_customs, 
+            demurrage_cost_to_apply, ocean_freight, impurity_penalty, carbon_tax_liability_per_mt
+        ]
     })
 
-    bars = alt.Chart(cost_data).mark_bar(color=CHART_GOLD, size=22).encode(
+    bars_e = alt.Chart(integrated_cost_data).mark_bar(color=CHART_GOLD, size=22).encode(
         x=alt.X("USD per Metric Ton:Q", title="USD / MT"),
         y=alt.Y("Cost Component:N", sort="x", title=None),
         tooltip=[alt.Tooltip("Cost Component:N"), alt.Tooltip("USD per Metric Ton:Q", format="$.2f")],
     )
-    labels = alt.Chart(cost_data).mark_text(
+    labels_e = alt.Chart(integrated_cost_data).mark_text(
         align="left", dx=6, color=CHART_INK_HIGH, font=CHART_FONT, fontSize=11, fontWeight="bold"
     ).encode(
         x="USD per Metric Ton:Q", y=alt.Y("Cost Component:N", sort="x"),
         text=alt.Text("USD per Metric Ton:Q", format="$.2f"),
     )
-    st.altair_chart(base_chart_props(bars + labels, height=300), use_container_width=True)
+    st.altair_chart(base_chart_props(bars_e + labels_e, height=300), use_container_width=True)
+
 
 # ==========================================
-# MODULE 07: SCENARIO SAVER & REPORT GENERATION
+# MODULE 09: SCENARIO SAVER & REPORT GENERATION (ENHANCED)
 # ==========================================
 section_header(
-    "Module 07 / Portfolio Audit Ledger",
+    "Module 09 / Portfolio Audit Ledger",
     "Scenario Saver &amp; Executive Export Suite",
     "Commit simulated configurations to your active session log, then export them into comprehensive "
     "CSV ledgers or plain-text executive briefs for boardroom presentations."
@@ -1562,7 +1763,7 @@ with col_save_btn:
     st.write("")
     st.write("")
     if st.button("Save Scenario", use_container_width=True):
-        save_scenario(
+        save_scenario_enhanced(
             label=scenario_label,
             commodity=selected_commodity,
             spot_price=spot_price,
@@ -1571,8 +1772,10 @@ with col_save_btn:
             border_wait=current_border_wait,
             port_congestion=port_waiting_days,
             demurrage=daily_demurrage_cost,
-            total_cost=total_estimated_cost,
-            net_margin=net_margin_percent,
+            carbon_liability=carbon_tax_liability_per_mt,
+            l_var_demurrage=demurrage_cost_to_apply,
+            total_cost=integrated_total_estimated_cost,
+            net_margin=integrated_net_margin_percent,
         )
         st.success(f"Scenario saved: **{st.session_state.scenario_ledger['Scenario ID'].iloc[-1]}**.")
 
