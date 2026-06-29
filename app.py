@@ -158,7 +158,7 @@ col_header_logo, col_header_text = st.columns([1, 11])
 with col_header_logo:
     st.image("https://img.icons8.com/color/96/containers.png", width=80)
 with col_header_text:
-    st.markdown(f"<h1 class='main-title'>Sino-African Logistics & Risk Matrix</h1>", unsafe_style_html=True)
+    st.markdown(f"<h1 class='main-title'>Sino-African Logistics & Risk Matrix</h1>", unsafe_allow_html=True)
     st.markdown(f"**Xiamen C&D Corporation Limited (Fortune Global 500)** | Supply Chain Treasury Operations Strategy Suite")
 
 st.markdown("---")
@@ -216,7 +216,7 @@ with col_stage1:
         <strong>Currency Exposure:</strong> ZiG / USD<br/>
         <strong>Risk Status:</strong> <span style="color:#EF4444; font-weight:bold;">HIGH (Inland Fuel Costs)</span>
     </div>
-    """, unsafe_style_html=True)
+    """, unsafe_allow_html=True)
 
 with col_stage2:
     st.markdown("""
@@ -227,7 +227,7 @@ with col_stage2:
         <strong>Currency Exposure:</strong> ZAR (Trucking & Storage)<br/>
         <strong>Risk Status:</strong> <span style="color:#10B981; font-weight:bold;">STABLE</span>
     </div>
-    """, unsafe_style_html=True)
+    """, unsafe_allow_html=True)
 
 with col_stage3:
     st.markdown("""
@@ -238,7 +238,7 @@ with col_stage3:
         <strong>Currency Exposure:</strong> ZAR / USD<br/>
         <strong>Risk Status:</strong> <span style="color:#EF4444; font-weight:bold;">CRITICAL (Port Delay Surcharges)</span>
     </div>
-    """, unsafe_style_html=True)
+    """, unsafe_allow_html=True)
 
 with col_stage4:
     st.markdown("""
