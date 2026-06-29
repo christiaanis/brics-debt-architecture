@@ -1135,7 +1135,7 @@ with st.expander("Corridor leg risk metrics"):
 # ==========================================
 section_header(
     "Module 02 / Predictive Forecasting",
-    f"Port Congestion Dynamics — {profile['port_label']}",
+    "Port Congestion Dynamics — {profile['port_label']}",
     "Trend-and-shock predictive forecasting utilizing a seasonal regression curve backstopped by "
     "simulated regional precipitation index, storage facility backlog, and transit delay indicators."
 )
@@ -1317,6 +1317,10 @@ with col_arb3:
         delta=f"Risk premium: {route_data['risk_idx']:.2f}",
         delta_color="normal" if route_data['risk_idx'] < 0.5 else "inverse"
     )
+
+# Define globally accessible variables right here so later modules don't trigger NameErrors!
+freight_arbitrage_offset = route_data.get("cost_add", 0.0)
+transit_arbitrage_offset = route_data.get("days_add", 0.0)
 
 st.info(f"📋 **Operational Profile Summary:** {route_data['desc']}")
 
@@ -1567,7 +1571,7 @@ with col_mc_inputs:
     )
 
 # Execute 500-run Monte Carlo Simulation using Lognormal distribution
-# mu represents expected delays (port waiting + border crossing)
+# Expected queue calculation incorporates the globally safe transit offset variable
 expected_total_queue = current_port_congestion + current_border_wait + transit_arbitrage_offset
 v = delay_volatility_pct / 100.0
 
@@ -1657,14 +1661,36 @@ section_header(
 col_sim_controls_e, col_sim_outputs_e = st.columns([1, 1])
 
 with col_sim_controls_e:
-    st.markdown("#### Quantitative Risk Configuration")
+    st.markdown("#### Operational Pricing Controls")
+    spot_price = st.slider(
+        f"{profile['spot_price_label']}",
+        min_value=int(profile["spot_price_range"][0]),
+        max_value=int(profile["spot_price_range"][1]),
+        value=int(profile["spot_price_default"]),
+    )
+    inland_trucking_usd = st.slider(
+        f"{origin_name.split(' (')[0]}-to-{profile['consolidation_label'].split(',')[0]} Transport (USD / MT)",
+        min_value=int(profile["inland_trucking_range"][0]),
+        max_value=int(profile["inland_trucking_range"][1]),
+        value=int(profile["inland_trucking_default"]),
+    )
+    warehouse_handling_local = st.slider(
+        f"Consolidation Depot Handling Fees ({profile['currency_gateway'].split(' / ')[0]} / MT)",
+        min_value=100, max_value=500, value=250
+    )
+    moisture_penalty = st.slider(
+        profile["moisture_penalty_label"],
+        min_value=float(profile["moisture_penalty_range"][0]),
+        max_value=float(profile["moisture_penalty_range"][1]),
+        value=float(profile["moisture_penalty_default"]),
+    )
     
+    st.markdown("#### Quantitative Risk Configuration")
     apply_carbon_tax = st.checkbox(
         "Apply Scope 3 / CBAM Surcharge to Total Cost Matrix",
         value=True,
         help="Injects computed Carbon Border Adjustment liabilities directly into cargo costs."
     )
-    
     apply_risk_buffer = st.selectbox(
         "Demurrage Risk Capital Buffer Method",
         options=["Standard Congestion Pricing", "95% L-VaR Capital Reserve", "99% L-VaR Capital Reserve (Stress)"],
@@ -1767,7 +1793,7 @@ with col_save_btn:
             label=scenario_label,
             commodity=selected_commodity,
             spot_price=spot_price,
-            ocean_freight=ocean_freight,
+            ocean_freight=fixed_freight_cost,
             inland_trucking=inland_trucking_usd,
             border_wait=current_border_wait,
             port_congestion=port_waiting_days,
