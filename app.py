@@ -5,51 +5,42 @@ import pydeck as pdk
 import requests
 import datetime
 import io
-import plotly.graph_objects as go
+import altair as alt
 
 # ==========================================
-# PLOTLY INSTITUTIONAL CHART THEME
+# ALTAIR INSTITUTIONAL CHART THEME
 # ==========================================
-# Single shared layout template so every chart in the app — forecast bands,
-# macro lines, cost breakdowns — reads as one coherent instrument, not three
-# different libraries bolted together. Matches the CSS token system above.
-PLOTLY_FONT = "IBM Plex Mono, monospace"
-PLOTLY_INK = "#E8EAED"
-PLOTLY_INK_LOW = "#8B93A7"
-PLOTLY_HAIRLINE = "#232938"
-PLOTLY_SURFACE = "#12161F"
-PLOTLY_GOLD = "#C9A24B"
-PLOTLY_CRITICAL = "#C84B3C"
-PLOTLY_STABLE = "#4B9C7E"
+# Altair ships bundled with Streamlit itself — no extra package install,
+# no requirements.txt drift, no "ModuleNotFoundError" on a fresh deploy.
+# Single shared theme so every chart in the app reads as one instrument.
+CHART_FONT = "IBM Plex Mono"
+CHART_INK = "#E8EAED"
+CHART_INK_LOW = "#8B93A7"
+CHART_HAIRLINE = "#232938"
+CHART_SURFACE = "#12161F"
+CHART_GOLD = "#C9A24B"
+CHART_CRITICAL = "#C84B3C"
+CHART_STABLE = "#4B9C7E"
 
 
-def style_fig(fig, height=380, show_legend=True):
-    """Applies the shared dark institutional theme to any Plotly figure."""
-    fig.update_layout(
-        height=height,
-        margin=dict(l=8, r=8, t=36, b=8),
-        plot_bgcolor=PLOTLY_SURFACE,
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(family=PLOTLY_FONT, color=PLOTLY_INK_LOW, size=12),
-        legend=dict(
-            orientation="h", yanchor="bottom", y=1.0, xanchor="left", x=0,
-            bgcolor="rgba(0,0,0,0)", font=dict(color=PLOTLY_INK_LOW, size=11),
-        ) if show_legend else dict(visible=False),
-        showlegend=show_legend,
-        hoverlabel=dict(
-            bgcolor=PLOTLY_SURFACE, bordercolor=PLOTLY_HAIRLINE,
-            font=dict(family=PLOTLY_FONT, color=PLOTLY_INK, size=12),
-        ),
-        xaxis=dict(
-            gridcolor=PLOTLY_HAIRLINE, linecolor=PLOTLY_HAIRLINE, zeroline=False,
-            tickfont=dict(color=PLOTLY_INK_LOW, size=11), title=dict(font=dict(size=11)),
-        ),
-        yaxis=dict(
-            gridcolor=PLOTLY_HAIRLINE, linecolor=PLOTLY_HAIRLINE, zeroline=False,
-            tickfont=dict(color=PLOTLY_INK_LOW, size=11), title=dict(font=dict(size=11)),
-        ),
+def base_chart_props(chart, height=320):
+    """Applies the shared dark institutional theme to any Altair chart."""
+    return (
+        chart
+        .properties(height=height, background="transparent")
+        .configure_view(strokeWidth=0)
+        .configure_axis(
+            gridColor=CHART_HAIRLINE, domainColor=CHART_HAIRLINE,
+            tickColor=CHART_HAIRLINE, labelColor=CHART_INK_LOW,
+            titleColor=CHART_INK_LOW, labelFont=CHART_FONT, titleFont=CHART_FONT,
+            labelFontSize=11, titleFontSize=11,
+        )
+        .configure_legend(
+            labelColor=CHART_INK_LOW, titleColor=CHART_INK_LOW,
+            labelFont=CHART_FONT, titleFont=CHART_FONT, orient="top-left",
+        )
+        .configure_axisX(grid=False)
     )
-    return fig
 
 # ==========================================
 # PAGE CONFIGURATION
@@ -1089,31 +1080,37 @@ chart_pivot = chart_df.pivot_table(index="Date", columns="Series", values="Wait 
 
 col_fc_chart, col_fc_stats = st.columns([3, 1])
 with col_fc_chart:
-    fig_fc = go.Figure()
+    hist_plot_df = historical_df[["Date", "Wait (Days)"]].assign(Series="Historical")
+    fc_plot_df = forecast_df[["Date", "Wait (Days)"]].assign(Series="Forecast")
 
-    # Shaded forecast uncertainty band (Upper/Lower Bound) — rendered first so
-    # the historical and forecast lines draw on top of it.
-    fig_fc.add_trace(go.Scatter(
-        x=pd.concat([forecast_df["Date"], forecast_df["Date"][::-1]]),
-        y=pd.concat([forecast_df["Upper Bound"], forecast_df["Lower Bound"][::-1]]),
-        fill="toself", fillcolor="rgba(201,162,75,0.12)",
-        line=dict(color="rgba(0,0,0,0)"), hoverinfo="skip",
-        name="Forecast Confidence Band", showlegend=True,
-    ))
-    fig_fc.add_trace(go.Scatter(
-        x=historical_df["Date"], y=historical_df["Wait (Days)"],
-        mode="lines", name="Historical", line=dict(color=PLOTLY_INK_LOW, width=2),
-    ))
-    fig_fc.add_trace(go.Scatter(
-        x=forecast_df["Date"], y=forecast_df["Wait (Days)"],
-        mode="lines+markers", name="Forecast",
-        line=dict(color=PLOTLY_GOLD, width=2.5),
-        marker=dict(size=5, color=PLOTLY_GOLD),
-    ))
-    fig_fc.add_vline(x=historical_df["Date"].iloc[-1], line_width=1,
-                      line_dash="dot", line_color=PLOTLY_HAIRLINE)
-    fig_fc.update_layout(yaxis_title="Wait (Days)")
-    st.plotly_chart(style_fig(fig_fc, height=380), use_container_width=True, config={"displayModeBar": False})
+    band = alt.Chart(forecast_df).mark_area(
+        opacity=0.18, color=CHART_GOLD
+    ).encode(
+        x=alt.X("Date:T", title=None),
+        y=alt.Y("Lower Bound:Q", title="Wait (Days)"),
+        y2="Upper Bound:Q",
+    )
+
+    hist_line = alt.Chart(hist_plot_df).mark_line(
+        color=CHART_INK_LOW, strokeWidth=2
+    ).encode(x="Date:T", y="Wait (Days):Q")
+
+    fc_line = alt.Chart(fc_plot_df).mark_line(
+        color=CHART_GOLD, strokeWidth=2.5, point=alt.OverlayMarkDef(color=CHART_GOLD, size=35)
+    ).encode(
+        x="Date:T", y="Wait (Days):Q",
+        tooltip=[alt.Tooltip("Date:T"), alt.Tooltip("Wait (Days):Q", format=".1f")],
+    )
+
+    today_rule = alt.Chart(pd.DataFrame({"Date": [historical_df["Date"].iloc[-1]]})).mark_rule(
+        color=CHART_HAIRLINE, strokeDash=[3, 3]
+    ).encode(x="Date:T")
+
+    fc_chart = base_chart_props(
+        (band + today_rule + hist_line + fc_line).resolve_scale(y="shared"),
+        height=380,
+    )
+    st.altair_chart(fc_chart, use_container_width=True)
     st.caption(
         f"Historical baseline (30 days) vs. {forecast_horizon}-day projected wait times, "
         f"{profile['port_label']}. Shaded band reflects compounding forecast uncertainty."
@@ -1158,14 +1155,20 @@ with col_graph_gateway:
     gw_debt_df = get_world_bank_data(gateway_code, "DT.DOD.DECT.CD")
     gw_inflation_df = get_world_bank_data(gateway_code, "FP.CPI.TOTL.ZG")
 
-    fig_gw = go.Figure()
-    fig_gw.add_trace(go.Scatter(
-        x=gw_debt_df["Year"], y=gw_debt_df["Value"], mode="lines",
-        line=dict(color=PLOTLY_GOLD, width=2.5), fill="tozeroy",
-        fillcolor="rgba(201,162,75,0.10)", name="External Debt (USD)",
-    ))
-    fig_gw.update_layout(yaxis_title="USD")
-    st.plotly_chart(style_fig(fig_gw, height=320, show_legend=False), use_container_width=True, config={"displayModeBar": False})
+    gw_chart = alt.Chart(gw_debt_df).mark_area(
+        line=alt.LineConfig(color=CHART_GOLD, strokeWidth=2.5),
+        color=alt.Gradient(
+            gradient="linear",
+            stops=[alt.GradientStop(color=CHART_GOLD, offset=0), alt.GradientStop(color=CHART_SURFACE, offset=1)],
+            x1=1, x2=1, y1=1, y2=0,
+        ),
+        opacity=0.35,
+    ).encode(
+        x=alt.X("Year:O", title=None),
+        y=alt.Y("Value:Q", title="USD"),
+        tooltip=[alt.Tooltip("Year:O"), alt.Tooltip("Value:Q", format=",.0f")],
+    )
+    st.altair_chart(base_chart_props(gw_chart, height=300), use_container_width=True)
     st.caption(f"{gateway_name.split(' (')[0]}: Total External Debt Stock Trend (USD)")
 
     gw_latest_inf = gw_inflation_df.iloc[-1]["Value"]
@@ -1179,14 +1182,20 @@ with col_graph_origin:
     origin_debt_df = get_world_bank_data(origin_code, "DT.DOD.DECT.CD")
     origin_inflation_df = get_world_bank_data(origin_code, "FP.CPI.TOTL.ZG")
 
-    fig_org = go.Figure()
-    fig_org.add_trace(go.Scatter(
-        x=origin_inflation_df["Year"], y=origin_inflation_df["Value"], mode="lines",
-        line=dict(color=PLOTLY_CRITICAL, width=2.5), fill="tozeroy",
-        fillcolor="rgba(200,75,60,0.10)", name="CPI Inflation (%)",
-    ))
-    fig_org.update_layout(yaxis_title="%")
-    st.plotly_chart(style_fig(fig_org, height=320, show_legend=False), use_container_width=True, config={"displayModeBar": False})
+    org_chart = alt.Chart(origin_inflation_df).mark_area(
+        line=alt.LineConfig(color=CHART_CRITICAL, strokeWidth=2.5),
+        color=alt.Gradient(
+            gradient="linear",
+            stops=[alt.GradientStop(color=CHART_CRITICAL, offset=0), alt.GradientStop(color=CHART_SURFACE, offset=1)],
+            x1=1, x2=1, y1=1, y2=0,
+        ),
+        opacity=0.35,
+    ).encode(
+        x=alt.X("Year:O", title=None),
+        y=alt.Y("Value:Q", title="%"),
+        tooltip=[alt.Tooltip("Year:O"), alt.Tooltip("Value:Q", format=".2f")],
+    )
+    st.altair_chart(base_chart_props(org_chart, height=300), use_container_width=True)
     st.caption(f"{origin_name.split(' (')[0]}: Historical CPI Inflation Trend (%)")
 
     origin_latest_debt = origin_debt_df.iloc[-1]["Value"]
@@ -1283,16 +1292,20 @@ with col_sim_outputs:
                             "Port Demurrage", "Ocean Freight", "Impurity Penalty"],
         "USD per Metric Ton": [raw_minegate_purchase, inland_freight, depot_and_customs,
                                 demurrage_and_port, ocean_freight, impurity_penalty]
-    }).sort_values("USD per Metric Ton", ascending=True)
+    })
 
-    fig_cost = go.Figure(go.Bar(
-        x=cost_data["USD per Metric Ton"], y=cost_data["Cost Component"],
-        orientation="h", marker=dict(color=PLOTLY_GOLD, line=dict(width=0)),
-        text=[f"${v:,.2f}" for v in cost_data["USD per Metric Ton"]],
-        textposition="outside", textfont=dict(color=PLOTLY_INK, family=PLOTLY_FONT, size=11),
-    ))
-    fig_cost.update_layout(xaxis_title="USD / MT", margin=dict(r=70))
-    st.plotly_chart(style_fig(fig_cost, height=320, show_legend=False), use_container_width=True, config={"displayModeBar": False})
+    bars = alt.Chart(cost_data).mark_bar(color=CHART_GOLD, size=22).encode(
+        x=alt.X("USD per Metric Ton:Q", title="USD / MT"),
+        y=alt.Y("Cost Component:N", sort="x", title=None),
+        tooltip=[alt.Tooltip("Cost Component:N"), alt.Tooltip("USD per Metric Ton:Q", format="$.2f")],
+    )
+    labels = alt.Chart(cost_data).mark_text(
+        align="left", dx=6, color=CHART_INK, font=CHART_FONT, fontSize=11
+    ).encode(
+        x="USD per Metric Ton:Q", y=alt.Y("Cost Component:N", sort="x"),
+        text=alt.Text("USD per Metric Ton:Q", format="$.2f"),
+    )
+    st.altair_chart(base_chart_props(bars + labels, height=300), use_container_width=True)
 
 # ==========================================
 # SECTION 6: SCENARIO SAVER & EXECUTIVE REPORT GENERATOR
