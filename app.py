@@ -296,6 +296,116 @@ st.markdown("""
 
     /* ---- KPI strip wrapper (adds breathing room without shadow) ---- */
     .kpi-row { margin-bottom: 4px; }
+
+    /* ---- Subtle depth + hover lift on the cards that benefit from it ---- */
+    [data-testid="stMetric"], .stage-card, [data-testid="stExpander"] {
+        transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    [data-testid="stMetric"]:hover, .stage-card:hover {
+        border-color: #2C3344;
+        transform: translateY(-1px);
+    }
+
+    /* ---- Top status bar: live data badges + system identity ---- */
+    .status-bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        padding-bottom: 10px;
+        margin-bottom: 4px;
+    }
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+        color: var(--ink-low);
+        text-transform: uppercase;
+    }
+    .status-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--risk-stable);
+        box-shadow: 0 0 0 0 rgba(75,156,126,0.6);
+        animation: pulse-dot 2.2s infinite;
+    }
+    @keyframes pulse-dot {
+        0%   { box-shadow: 0 0 0 0 rgba(75,156,126,0.55); }
+        70%  { box-shadow: 0 0 0 5px rgba(75,156,126,0); }
+        100% { box-shadow: 0 0 0 0 rgba(75,156,126,0); }
+    }
+    .status-divider { width: 1px; height: 12px; background: var(--hairline); }
+    .badge-tier {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.66rem;
+        letter-spacing: 0.08em;
+        color: var(--ink);
+        background: var(--signal);
+        padding: 2px 7px;
+        border-radius: 2px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    /* ---- Executive briefing card: the one-glance synthesis at the top ---- */
+    .brief-card {
+        background: linear-gradient(135deg, var(--surface-raised) 0%, var(--surface) 100%);
+        border: 1px solid var(--hairline);
+        border-left: 3px solid var(--signal);
+        border-radius: 4px;
+        padding: 20px 24px 18px 22px;
+        margin-bottom: 22px;
+    }
+    .brief-card .brief-label {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--signal);
+        display: block;
+        margin-bottom: 8px;
+    }
+    .brief-card .brief-text {
+        font-family: 'IBM Plex Sans', sans-serif;
+        font-size: 0.96rem;
+        line-height: 1.55;
+        color: var(--ink-high);
+        margin-bottom: 12px;
+    }
+    .brief-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .brief-tag {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 2px;
+        border: 1px solid var(--hairline);
+        letter-spacing: 0.02em;
+    }
+    .brief-tag.t-stable  { color: var(--risk-stable);  border-color: rgba(75,156,126,0.35); background: rgba(75,156,126,0.08); }
+    .brief-tag.t-caution { color: var(--risk-caution); border-color: rgba(201,162,75,0.35); background: rgba(201,162,75,0.08); }
+    .brief-tag.t-critical{ color: var(--risk-critical);border-color: rgba(200,75,60,0.35); background: rgba(200,75,60,0.08); }
+
+    /* ---- Tabs: institutional underline style, not the default pill chips ---- */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 28px;
+        border-bottom: 1px solid var(--hairline);
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-family: 'IBM Plex Sans', sans-serif;
+        font-weight: 500;
+        font-size: 0.86rem;
+        color: var(--ink-low);
+        padding: 8px 2px 12px 2px;
+        background: transparent;
+    }
+    .stTabs [aria-selected="true"] {
+        color: var(--ink-high) !important;
+        border-bottom: 2px solid var(--signal) !important;
+    }
+    .stTabs [data-baseweb="tab-highlight"] { background-color: transparent; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -953,6 +1063,21 @@ st.sidebar.info(
 # ==========================================
 # HEADER SECTION
 # ==========================================
+_now_str = datetime.datetime.now().strftime("%H:%M:%S UTC")
+st.markdown(
+    f"""
+    <div class="status-bar">
+        <span class="status-pill"><span class="status-dot"></span> LIVE FEED CONNECTED</span>
+        <span class="status-divider"></span>
+        <span class="status-pill">SESSION CLOCK {_now_str}</span>
+        <span class="status-divider"></span>
+        <span class="status-pill">COVERAGE: ZW · ZA · ZM · MZ · TZ · CN</span>
+        <span class="status-divider"></span>
+        <span class="badge-tier">INSTITUTIONAL GRADE</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 st.markdown(
     "<span class='eyebrow'>XIAMEN C&amp;D CORPORATION LIMITED &nbsp;·&nbsp; FORTUNE GLOBAL 500</span>",
     unsafe_allow_html=True
@@ -1012,6 +1137,43 @@ with col_kpi4:
         delta="+$4.50 (Market Demand)",
         delta_color="normal"
     )
+
+# ------------------------------------------------------------------
+# EXECUTIVE BRIEFING — auto-synthesized one-glance read of the corridor's
+# current state. Pulls directly from the same live variables driving the
+# KPIs and map below, so it never drifts out of sync with the data.
+# ------------------------------------------------------------------
+border_state = "critical" if current_border_wait >= 6 else ("caution" if current_border_wait >= 3.5 else "stable")
+port_delta = current_port_congestion - profile["port_congestion_baseline"]
+port_state = "critical" if current_port_congestion > 12 else ("caution" if current_port_congestion > 7 else "stable")
+
+tag_class = {"stable": "t-stable", "caution": "t-caution", "critical": "t-critical"}
+border_word = {"stable": "running within tolerance", "caution": "showing moderate friction", "critical": "experiencing acute delay"}[border_state]
+port_word = {"stable": "operating below baseline", "caution": "tracking above baseline", "critical": "materially congested"}[port_state]
+
+brief_text = (
+    f"The {selected_commodity} corridor from {profile['mine_label']} to {profile['destination_label']} is "
+    f"currently {('clear for standard execution' if border_state == 'stable' and port_state == 'stable' else 'carrying elevated operational risk that warrants desk attention')}. "
+    f"{profile['border_post_label']} is {border_word} at {current_border_wait:.1f} days average wait, while "
+    f"{profile['port_label']} is {port_word} ({current_port_congestion:.1f}d vs. {profile['port_congestion_baseline']:.1f}d baseline, "
+    f"{port_delta:+.1f}d). Treasury clearing rate {gateway_currency_label} stands at {gateway_rate_value}, sourced from "
+    f"{fx_data.get('Status', 'a live feed')}."
+)
+
+st.markdown(
+    f"""
+    <div class="brief-card">
+        <span class="brief-label">Executive Briefing — Auto-Synthesized</span>
+        <div class="brief-text">{brief_text}</div>
+        <div class="brief-tags">
+            <span class="brief-tag {tag_class[border_state]}">BORDER: {border_state.upper()}</span>
+            <span class="brief-tag {tag_class[port_state]}">PORT: {port_state.upper()}</span>
+            <span class="brief-tag t-stable">FX FEED: ACTIVE</span>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # ==========================================
 # SECTION 2: GEOSPATIAL CORRIDOR INTELLIGENCE (PYDECK)
