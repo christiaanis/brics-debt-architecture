@@ -418,6 +418,11 @@ COMMODITY_PROFILES = {
             {"name": "Durban Port", "lat": -29.8587, "lon": 31.0218, "stage": "Port Gateway"},
             {"name": "Tianjin Port, China", "lat": 39.0027, "lon": 117.7164, "stage": "Discharge"},
         ],
+        "routes_alt": {
+            "Standard Road (Beitbridge)": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.72, "desc": "Standard inland trucking across Beitbridge; vulnerable to crossing bottlenecks."},
+            "TAZARA Rail Alignment": {"cost_add": -12.50, "days_add": 4.5, "risk_idx": 0.38, "desc": "Utilizes integrated bulk rail; reduces tariff costs but incurs tracking latency."},
+            "Maputo Deepwater Corridor": {"cost_add": 8.00, "days_add": -2.0, "risk_idx": 0.50, "desc": "Direct diversion to Maputo port; skips Durban queues at slightly higher base tariffs."}
+        }
     },
     "Lithium Spodumene": {
         "icon": "🔋",
@@ -452,6 +457,11 @@ COMMODITY_PROFILES = {
             {"name": "Beira Port, Mozambique", "lat": -19.8436, "lon": 34.8389, "stage": "Port Gateway"},
             {"name": "Tianjin Port, China", "lat": 39.0027, "lon": 117.7164, "stage": "Discharge"},
         ],
+        "routes_alt": {
+            "Beira Railway Corridor": {"cost_add": -15.00, "days_add": 3.0, "risk_idx": 0.40, "desc": "Direct narrow-gauge rail from Machipanda to Beira terminals."},
+            "Intermodal Road Heavy": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.65, "desc": "Heavy fleet road haulage; subject to local infrastructure decay."},
+            "Nacala Deepwater Bypass": {"cost_add": 22.00, "days_add": -1.5, "risk_idx": 0.30, "desc": "Long haul bypass to Nacala's natural deepwater harbor; maximizes safety indexes."}
+        }
     },
     "Refined Copper": {
         "icon": "🟠",
@@ -486,6 +496,11 @@ COMMODITY_PROFILES = {
             {"name": "Dar es Salaam Port", "lat": -6.8160, "lon": 39.2803, "stage": "Port Gateway"},
             {"name": "Shanghai Port, China", "lat": 31.2304, "lon": 121.4737, "stage": "Discharge"},
         ],
+        "routes_alt": {
+            "TAZARA Corridor Rail": {"cost_add": -20.00, "days_add": 5.0, "risk_idx": 0.45, "desc": "State-to-state sovereign rail connection to Dar es Salaam; highly efficient but slow."},
+            "Lobito Atlantic Bypass": {"cost_add": 15.00, "days_add": -4.0, "risk_idx": 0.35, "desc": "Reroutes copper flows westward via the Lobito Corridor to access direct US/EU shipping lanes."},
+            "Standard East Coast Road": {"cost_add": 0.0, "days_add": 0.0, "risk_idx": 0.70, "desc": "Standard highway transport; subject to heavy weight checkpoint delays."}
+        }
     },
 }
 
@@ -1239,10 +1254,174 @@ with col_graph_origin:
     )
 
 # ==========================================
-# SECTION 5: CARGO MARGIN STRESS-TESTING SUITE
+# MODULE 04: MULTI-ROUTE ARBITRAGE & SOURCING SELECTOR
 # ==========================================
 section_header(
-    "Module 04 / Margin Optimization Simulator",
+    "Module 04 / Sourcing Arbitrage",
+    "Multi-Route Cost &amp; Transit Optimization Matrix",
+    "Identify operational cost deltas and transit delay variations across active alternative transport options "
+    "to optimize transport lanes dynamically under current port conditions."
+)
+
+route_opts = profile.get("routes_alt", {})
+selected_route_alt = st.selectbox(
+    "Compare Alternate Logistics Pathway",
+    options=list(route_opts.keys()),
+    help="Select alternative shipping pathways to compute tariff adjustments, border waiting offsets, and safety parameters."
+)
+
+route_data = route_opts[selected_route_alt]
+
+# Render Arbitrage KPI Comparison Cards
+col_arb1, col_arb2, col_arb3 = st.columns(3)
+with col_arb1:
+    st.metric(
+        label="Tariff Adjustment (USD / MT)",
+        value=f"${route_data['cost_add']:+.2f}",
+        delta="Cost impact" if route_data['cost_add'] <= 0 else "Premium tariff",
+        delta_color="normal" if route_data['cost_add'] <= 0 else "inverse"
+    )
+with col_arb2:
+    st.metric(
+        label="Transit Duration Delta",
+        value=f"{route_data['days_add']:+.1f} Days",
+        delta="Inbound latency" if route_data['days_add'] >= 0 else "Expedited speed",
+        delta_color="inverse" if route_data['days_add'] >= 0 else "normal"
+    )
+with col_arb3:
+    st.metric(
+        label="Pathway Safety Index",
+        value=f"{((1.0 - route_data['risk_idx']) * 100):.1f}%",
+        delta=f"Risk premium: {route_data['risk_idx']:.2f}",
+        delta_color="normal" if route_data['risk_idx'] < 0.5 else "inverse"
+    )
+
+st.info(f"📋 **Operational Profile Summary:** {route_data['desc']}")
+
+# Build Altair Bar Chart of all paths to show Route Arbitrage
+arb_chart_data = pd.DataFrame([
+    {
+        "Route Option": name,
+        "Premium (USD/MT)": float(data["cost_add"]),
+        "Transit Impact (Days)": float(data["days_add"]),
+        "Vulnerability Index": float(data["risk_idx"])
+    } for name, data in route_opts.items()
+])
+
+col_arb_c1, col_arb_c2 = st.columns(2)
+with col_arb_c1:
+    cost_bars = alt.Chart(arb_chart_data).mark_bar(color=CHART_GOLD, size=24).encode(
+        x=alt.X("Premium (USD/MT):Q", title="Relative Cost Impact (USD)"),
+        y=alt.Y("Route Option:N", sort="x", title=None),
+        tooltip=["Route Option:N", "Premium (USD/MT):Q"]
+    )
+    st.altair_chart(base_chart_props(cost_bars, height=220), use_container_width=True)
+    st.caption("Route Arbitrage: Comparative Cost Impact relative to Baseline Sourcing Lane.")
+
+with col_arb_c2:
+    days_bars = alt.Chart(arb_chart_data).mark_bar(color=CHART_CRITICAL, size=24).encode(
+        x=alt.X("Transit Impact (Days):Q", title="Transit Day Squeeze (Days)"),
+        y=alt.Y("Route Option:N", sort="x", title=None),
+        tooltip=["Route Option:N", "Transit Impact (Days):Q"]
+    )
+    st.altair_chart(base_chart_props(days_bars, height=220), use_container_width=True)
+    st.caption("Route Arbitrage: Comparative Transit Delay Squeeze.")
+
+
+# ==========================================
+# MODULE 05: SOVEREIGN CURRENCY SWAP & TREASURY simulator
+# ==========================================
+section_header(
+    "Module 05 / Currency Swap Simulator",
+    "B2B Clearing Velocity &amp; Sovereign Swap Desk",
+    "Chinese multinational corporations must navigate local currency fluctuations (such as Rand or ZiG) "
+    "and Western-mediated USD clearing holds. This simulator runs treasury operations clearing via direct RMB "
+    "clearing banks backed by bilateral central bank liquidity swaps."
+)
+
+col_swap_ctrl, col_swap_stats = st.columns([1, 1])
+
+with col_swap_ctrl:
+    st.markdown("#### Configure Treasury Clearing Channel")
+    swap_vol_rmb = st.number_input(
+        "Clearing Allocation Size (CNY / RMB)",
+        min_value=100000, max_value=50000000, value=2500000, step=100000
+    )
+    clearing_channel = st.selectbox(
+        "Clearing Mechanism Channel",
+        options=[
+            "PBOC Direct RMB clearing bank",
+            "Western Commercial USD-mediated Clearing",
+            "Bilateral Central Bank Liquidity Swap"
+        ]
+    )
+    
+    # Mathematical models for each clearing mechanism
+    if clearing_channel == "PBOC Direct RMB clearing bank":
+        swap_spread_bps = 15.0  # minimal currency friction
+        clearing_days = 1.5
+        liquidity_score = 94.0
+        risk_hedge_cost = 0.002 # 0.2%
+    elif clearing_channel == "Western Commercial USD-mediated Clearing":
+        swap_spread_bps = 45.0  # US bank transit fee
+        clearing_days = 6.0     # high delay due to international compliance
+        liquidity_score = 42.0
+        risk_hedge_cost = 0.015 # 1.5% due to forex exposure
+    else:  # Bilateral Swap
+        swap_spread_bps = 25.0
+        clearing_days = 2.0
+        liquidity_score = 85.0
+        risk_hedge_cost = 0.005 # 0.5%
+
+with col_swap_stats:
+    st.markdown("#### Simulated Capital Release Projections")
+    
+    total_spread_cost_rmb = swap_vol_rmb * (swap_spread_bps / 10000.0)
+    hedging_cost_rmb = swap_vol_rmb * risk_hedge_cost
+    total_clearing_cost_rmb = total_spread_cost_rmb + hedging_cost_rmb
+    releasing_speed = max(100.0 - (clearing_days * 12), 10.0)
+    
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        st.metric(
+            label="Total Clearing Cost (CNY)",
+            value=f"¥ {total_clearing_cost_rmb:,.2f}",
+            delta=f"Spread: {swap_spread_bps:.1f} bps",
+            delta_color="inverse"
+        )
+    with col_t2:
+        st.metric(
+            label="Capital Lock-up Duration",
+            value=f"{clearing_days:.1f} Days",
+            delta=f"Liquidity Velocity: {liquidity_score:.0f}/100",
+            delta_color="normal" if liquidity_score >= 80 else "inverse"
+        )
+        
+    st.markdown("##### Clearing Pathway Friction Score Matrix")
+    
+    # Progress visualization of Clearing Velocity
+    st.progress(
+        int(releasing_speed) / 100.0,
+        text=f"Capital Clearance Efficiency Score: {releasing_speed:.1f}%"
+    )
+    
+    if clearing_channel == "Western Commercial USD-mediated Clearing":
+        st.error(
+            "⚠️ **Western Interbank Squeeze Warning:** USD transit routing introduces heavy compliance holds, "
+            "extending trade settlement times by several days. Consider PBOC Direct channels."
+        )
+    else:
+        st.success(
+            "🟢 **RMB Corridor Optimal Execution:** Minimal FX risk. Settlement runs outside the dollar domain, "
+            "preserving high liquidity velocity."
+        )
+
+
+# ==========================================
+# MODULE 06: CARGO MARGIN STRESS-TESTING SUITE
+# ==========================================
+section_header(
+    "Module 06 / Margin Optimization Simulator",
     "Shipment Economics &amp; Operational Squeeze Metrics",
     "Simulate financial performance across diverse cargo volumes and regional logistics disruptions "
     "to stress-test profit margins against baseline benchmarks."
@@ -1263,6 +1442,10 @@ with col_sim_controls:
         max_value=int(profile["spot_price_range"][1]),
         value=int(profile["spot_price_default"]),
     )
+    # Factor route arbitrage offset adjustments directly into simulated freight costs
+    freight_arbitrage_offset = route_data["cost_add"]
+    transit_arbitrage_offset = route_data["days_add"]
+
     inland_trucking_usd = st.slider(
         f"{origin_name.split(' (')[0]}-to-{profile['consolidation_label'].split(',')[0]} Transport (USD / MT)",
         min_value=int(profile["inland_trucking_range"][0]),
@@ -1281,7 +1464,7 @@ with col_sim_controls:
     )
     port_waiting_days = st.slider(
         f"{profile['port_label']} Delay Surcharge (Days)",
-        min_value=1, max_value=30, value=int(round(current_port_congestion))
+        min_value=1, max_value=30, value=int(round(current_port_congestion + transit_arbitrage_offset))
     )
     daily_demurrage_cost = st.number_input("Vessel Demurrage Penalty (USD / Day)", value=22000, step=1000)
 
@@ -1292,7 +1475,7 @@ with col_sim_outputs:
     st.markdown("#### Real-time financial model")
 
     raw_minegate_purchase = spot_price * profile["minegate_pct_of_cif"]
-    inland_freight = inland_trucking_usd
+    inland_freight = inland_trucking_usd + freight_arbitrage_offset
     depot_and_customs = warehouse_usd
     demurrage_and_port = port_holding_usd
     ocean_freight = fixed_freight_cost
@@ -1341,10 +1524,10 @@ with col_sim_outputs:
     st.altair_chart(base_chart_props(bars + labels, height=300), use_container_width=True)
 
 # ==========================================
-# SECTION 6: SCENARIO SAVER & REPORT GENERATION
+# MODULE 07: SCENARIO SAVER & REPORT GENERATION
 # ==========================================
 section_header(
-    "Module 05 / Portfolio Audit Ledger",
+    "Module 07 / Portfolio Audit Ledger",
     "Scenario Saver &amp; Executive Export Suite",
     "Commit simulated configurations to your active session log, then export them into comprehensive "
     "CSV ledgers or plain-text executive briefs for boardroom presentations."
