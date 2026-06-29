@@ -33,7 +33,7 @@ st.markdown("""
         letter-spacing: -0.05em;
     }
 </style>
-""", unsafe_style_html=True)
+""", unsafe_allow_html=True)
 
 # ==========================================
 # CONSTANTS & METADATA
@@ -327,7 +327,7 @@ with col_sim_outputs:
     
     # Colored indicator based on target margin performance
     if net_margin_percent >= target_margin_percent:
-        st.success(f"🟢 **Operation Approved:** Simulated Margin is **{net_margin_percent:.2f}%** (Exceeds Target of {target_percent}%)")
+        st.success(f"🟢 **Operation Approved:** Simulated Margin is **{net_margin_percent:.2f}%** (Exceeds Target of {target_margin_percent}%)")
     elif net_margin_percent > 0:
         st.warning(f"🟡 **Margin Compression Alert:** Simulated Margin is **{net_margin_percent:.2f}%** (Below Target of {target_margin_percent}%)")
     else:
@@ -348,4 +348,4 @@ col_foot1, col_foot2 = st.columns([1, 1])
 with col_foot1:
     st.caption("🚨 *Disclaimer: Designed for academic showcase and strategic planning for the Schwarzman Scholars application. Macro datasets are updated live using public open APIs.*")
 with col_foot2:
-    st.markdown(f"<p style='text-align: right; color: gray; font-size: 0.8em;'>SATT Architecture V1.0 | {DESIGNER}</p>", unsafe_style_html=True)
+    st.markdown(f"<p style='text-align: right; color: gray; font-size: 0.8em;'>SATT Architecture V1.0 | {DESIGNER}</p>", unsafe_allow_html=True)
